@@ -1,0 +1,38 @@
+<div class="login-container">
+    <div class="login-card">
+        <h1 class="logo">Flash-AI</h1>
+        <p class="welcome-text">Welcome back! Please login to your account.</p>
+        
+        <%= tag.div(flash[:alert], class: "alert-message") if flash[:alert] %>
+        <%= tag.div(flash[:notice], class: "notice-message") if flash[:notice] %>
+        
+        <%= form_with url: session_path, class: 'login-form' do |form| %>
+            <div class="input-group">
+                <label for="email_address">Email</label>
+                <%= form.email_field :email_address, 
+                    required: true, 
+                    autofocus: true, 
+                    autocomplete: "username", 
+                    placeholder: "Enter your email address", 
+                    value: params[:email_address] %>
+            </div>
+
+            <div class="input-group">
+                <label for="password">Password</label>
+                <%= form.password_field :password, 
+                    required: true, 
+                    autocomplete: "current-password", 
+                    placeholder: "Enter your password", 
+                    maxlength: 72 %>
+            </div>
+
+            <%= form.submit "Sign in", class: "login-button" %>
+        <% end %>
+
+        <p class="signup-text">
+            <%= link_to "Forgot password?", new_password_path %>
+            <br>
+            Don't have an account? <%= link_to "Sign Up", new_user_path %>
+        </p>
+    </div>
+</div>
