@@ -20,6 +20,39 @@
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
+    
+    <%# This script fixes form submissions when the app is hosted on services like GitHub, Render, etc. %>
+    <script>
+      // Fix for environment differences with CSRF protection
+      document.addEventListener('turbo:load', function() {
+        // Get the current base URL from the page
+        var currentBaseUrl = window.location.origin;
+        
+        // Update all form actions to use the current base URL if they're pointing to localhost
+        document.querySelectorAll('form').forEach(function(form) {
+          if (form.action && (
+              form.action.includes('localhost') || 
+              form.action.includes('127.0.0.1'))) {
+            // Replace localhost or 127.0.0.1 URLs with the current origin
+            form.action = form.action.replace(/https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/, currentBaseUrl);
+          }
+        });
+        
+        // Also fix links that might be pointing to localhost
+        document.querySelectorAll('a').forEach(function(link) {
+          if (link.href && (
+              link.href.includes('localhost') || 
+              link.href.includes('127.0.0.1'))) {
+            // Only fix internal links (not external ones)
+            if (link.getAttribute('href').startsWith('/') || 
+                link.href.includes('localhost') || 
+                link.href.includes('127.0.0.1')) {
+              link.href = link.href.replace(/https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/, currentBaseUrl);
+            }
+          }
+        });
+      });
+    </script>
   </head>
 
   <body>

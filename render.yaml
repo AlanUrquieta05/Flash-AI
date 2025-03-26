@@ -1,0 +1,19 @@
+# This file configures deployment on Render.com
+# Documentation: https://render.com/docs/yaml-spec
+
+services:
+  - type: web
+    name: flash-ai
+    runtime: ruby
+    plan: free  # Change this to a paid plan for production apps
+    buildCommand: bundle install && bin/rails assets:precompile && bin/rails db:migrate
+    startCommand: bundle exec puma -C config/puma.rb
+    envVars:
+      - key: RAILS_MASTER_KEY
+        sync: false  # This must be set manually in the Render dashboard
+      - key: RAILS_ENV
+        value: production
+      - key: RAILS_SERVE_STATIC_FILES
+        value: true
+      - key: RENDER
+        value: true 
