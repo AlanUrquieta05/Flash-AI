@@ -1,0 +1,216 @@
+/* Study mode page */
+.study-container {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #F8F7F7;
+  padding-bottom: 50px;
+}
+
+/* Header */
+.study-header {
+  height: 72px;
+  background-color: white;
+  border-bottom: 1px solid black;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 50px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.set-title {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  flex-grow: 1;
+}
+
+.logo {
+  color: #2079F8;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.create-test-btn {
+  background-color: #2079F8;
+  color: white;
+  border: 1px solid black;
+  border-radius: 11px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.create-test-btn .arrow {
+  margin-left: 10px;
+  font-size: 18px;
+}
+
+.back-link {
+  color: #2079F8;
+  text-decoration: none;
+  font-size: 18px;
+  margin: 30px 0 0 62px;
+  display: inline-block;
+}
+
+/* Flash Card */
+.flashcard-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 50px;
+  position: relative;
+}
+
+.flashcard {
+  width: 647px;
+  height: 330px;
+  background-color: white;
+  border: 2px solid black;
+  border-radius: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+  text-align: center;
+  padding: 30px;
+}
+
+.card-content {
+  font-size: 24px;
+  line-height: 1.5;
+}
+
+.card-content strong {
+  font-size: 32px;
+  display: block;
+  margin-bottom: 20px;
+}
+
+.nav-button {
+  width: 70px;
+  height: 70px;
+  background-color: #787878;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  margin: 0 25px;
+}
+
+.nav-button span {
+  color: white;
+  font-size: 30px;
+  font-weight: bold;
+}
+
+.flip-button-container {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+}
+
+.flip-button {
+  font-size: 30px;
+  transform: rotate(90deg);
+  display: flex;
+  margin: 0 5px;
+  cursor: pointer;
+}
+
+/* Table View */
+.table-container {
+  margin: 40px auto;
+  width: 1000px;
+  background-color: #F1F1F1;
+  border: 1px solid black;
+  border-radius: 14px;
+}
+
+.table-header {
+  display: flex;
+  padding: 6px 0;
+}
+
+.table-header .front-column, 
+.table-header .back-column {
+  flex: 1;
+  padding: 0 25px;
+  font-weight: bold;
+  font-size: 20px;
+}
+
+.vertical-divider {
+  width: 2px;
+  background-color: #828282;
+  height: 100%;
+}
+
+.horizontal-divider {
+  height: 1px;
+  background-color: black;
+  width: 100%;
+}
+
+.table-row {
+  display: flex;
+  margin-bottom: -1px;
+}
+
+.table-cell {
+  flex: 1;
+  padding: 20px 25px;
+  min-height: 100px;
+  font-size: 16px;
+}
+
+.front-column {
+  border-right: 1px solid black;
+}
+
+/* Media Queries */
+@media (max-width: 1100px) {
+  .table-container {
+    width: 90%;
+  }
+}
+
+@media (max-width: 768px) {
+  .study-header {
+    padding: 0 20px;
+    height: auto;
+    padding: 15px 20px;
+    flex-wrap: wrap;
+  }
+  
+  .set-title {
+    order: 3;
+    width: 100%;
+    margin-top: 10px;
+    font-size: 20px;
+  }
+  
+  .flashcard {
+    width: 85%;
+    height: 280px;
+  }
+  
+  .back-link {
+    margin: 20px 0 0 20px;
+  }
+  
+  .nav-button {
+    width: 45px;
+    height: 45px;
+    margin: 0 10px;
+  }
+  
+  .table-cell {
+    padding: 15px;
+    font-size: 14px;
+  }
+} 

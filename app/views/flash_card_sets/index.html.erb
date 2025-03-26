@@ -1,0 +1,121 @@
+<% content_for :head do %>
+  <%= stylesheet_link_tag 'flash_card_sets' %>
+<% end %>
+  
+<div class="page-container">
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">Flash-AI</div>
+    <div class="user-icon"></div>
+  </div>
+  
+  <!-- Create Flashcards Section -->
+  <div class="create-section">
+    <h1 class="create-title">Create Your Flashcards</h1>
+    <div class="search-container">
+      <input type="text" class="search-input" placeholder="Enter a topic to generate AI flashcards ...">
+      <button class="generate-button">Generate</button>
+    </div>
+  </div>
+  
+  <!-- Flash Card Sets Section -->
+  <div class="sets-container">
+    <% if notice.present? %>
+      <div class="notice"><%= notice %></div>
+    <% end %>
+    
+    <h2 class="sets-title">Your Flash Card Sets</h2>
+    
+    <div class="card-grid">
+      <% favorite_sets = @flash_card_sets.select(&:favorite) %>
+      <% unfavorite_sets = @flash_card_sets.reject(&:favorite) %>
+      
+      <% if favorite_sets.any? %>
+        <% favorite_sets.each do |set| %>
+          <div class="card">
+            <div class="card-content">
+              <div class="card-header">
+                <h3 class="card-title"><%= set.name %></h3>
+                <div class="card-actions">
+                  <%= form_with url: toggle_favorite_flash_card_set_path(set), method: :patch, html: {style: "display: inline;"} do |form| %>
+                    <%= form.button '★', type: "submit", class: "favorite-btn" %>
+                  <% end %>
+                  <div style="position: relative; display: inline-block;">
+                    <button onclick="showMenu('<%= set.id %>')" style="background: none; border: none; cursor: pointer;">⋮</button>
+                    <div id="menu-<%= set.id %>" style="display: none; position: absolute; right: 0; background: white; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10;">
+                      <%= link_to "Edit", edit_flash_card_set_path(set), style: "display: block; padding: 8px 12px; text-decoration: none; color: black;" %>
+                      <%= button_to "Delete", flash_card_set_path(set), method: :delete, style: "background: none; border: none; width: 100%; text-align: left; padding: 8px 12px; cursor: pointer; color: #dc3545;", data: { confirm: "Are you sure you want to delete this set?" } %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-count"><%= pluralize(set.length, 'Card') %></div>
+              <div class="study-button-container">
+                <a href="<%= flash_card_set_path(set) %>" class="study-button">Study</a>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+      
+      <% if unfavorite_sets.any? %>
+        <% unfavorite_sets.each do |set| %>
+          <div class="card">
+            <div class="card-content">
+              <div class="card-header">
+                <h3 class="card-title"><%= set.name %></h3>
+                <div class="card-actions">
+                  <%= form_with url: toggle_favorite_flash_card_set_path(set), method: :patch, html: {style: "display: inline;"} do |form| %>
+                    <%= form.button '☆', type: "submit", class: "unfavorite-btn" %>
+                  <% end %>
+                  <div style="position: relative; display: inline-block;">
+                    <button onclick="showMenu('<%= set.id %>')" style="background: none; border: none; cursor: pointer;">⋮</button>
+                    <div id="menu-<%= set.id %>" style="display: none; position: absolute; right: 0; background: white; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10;">
+                      <%= link_to "Edit", edit_flash_card_set_path(set), style: "display: block; padding: 8px 12px; text-decoration: none; color: black;" %>
+                      <%= button_to "Delete", flash_card_set_path(set), method: :delete, style: "background: none; border: none; width: 100%; text-align: left; padding: 8px 12px; cursor: pointer; color: #dc3545;", data: { confirm: "Are you sure you want to delete this set?" } %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-count"><%= pluralize(set.length, 'Card') %></div>
+              <div class="study-button-container">
+                <a href="<%= flash_card_set_path(set) %>" class="study-button">Study</a>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+      
+      <!-- Create New Set Card (always last) -->
+      <a href="<%= new_flash_card_set_path %>" class="card create-new-card">
+        <div class="add-circle">
+          <span class="plus-sign">+</span>
+        </div>
+        <span>Create New Set</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  function showMenu(id) {
+    const menu = document.getElementById(`menu-${id}`);
+    if (menu.style.display === 'none') {
+      // Hide all other menus first
+      document.querySelectorAll('[id^="menu-"]').forEach(el => {
+        el.style.display = 'none';
+      });
+      menu.style.display = 'block';
+    } else {
+      menu.style.display = 'none';
+    }
+    
+    // Close menu when clicking elsewhere
+    document.addEventListener('click', function closeMenu(e) {
+      if (!e.target.closest(`#menu-${id}`) && !e.target.closest(`button[onclick="showMenu('${id}')"]`)) {
+        menu.style.display = 'none';
+        document.removeEventListener('click', closeMenu);
+      }
+    });
+  }
+</script>

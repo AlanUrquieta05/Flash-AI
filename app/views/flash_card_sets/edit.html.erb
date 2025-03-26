@@ -1,0 +1,103 @@
+<% content_for :title, "New flash card set" %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag 'flash_card_form', media: 'all' %>
+<% end %>
+
+<!-- Header at top with form-specific classes -->
+<div class="form-page-header">
+  <div class="form-page-logo">Flash-AI</div>
+  <div class="form-page-user-icon"></div>
+</div>
+
+<a href="<%= flash_card_sets_path %>" class="form-page-back-link">Back to home</a>
+
+<div class="main-content">
+  <div class="form-container">
+    <%= form_with(model: @flash_card_set, local: true, class: "card-form") do |form| %>
+      <div class="form-group">
+        <%= form.text_field :name, class: "deck-name-input", placeholder: "Enter Deck Name" %>
+      </div>
+      
+      <div class="card-columns">
+        <div class="card-column">
+          <h2 class="column-title">Front</h2>
+          <div class="column-input-line"></div>
+        </div>
+        
+        <div class="card-column">
+          <h2 class="column-title">Back</h2>
+          <div class="column-input-line"></div>
+        </div>
+      </div>
+      
+      <div id="card-fields-container">
+        <div class="card-row">
+          <div class="card-columns">
+            <div class="card-column">
+              <textarea class="card-textarea" name="flash_card_set[cards][][front]" placeholder="Enter front side content"></textarea>
+            </div>
+            
+            <div class="card-column">
+              <textarea class="card-textarea" name="flash_card_set[cards][][back]" placeholder="Enter back side content"></textarea>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-row">
+          <div class="card-columns">
+            <div class="card-column">
+              <textarea class="card-textarea" name="flash_card_set[cards][][front]" placeholder="Enter front side content"></textarea>
+            </div>
+            
+            <div class="card-column">
+              <textarea class="card-textarea" name="flash_card_set[cards][][back]" placeholder="Enter back side content"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <button type="button" class="add-card-btn" id="add-card-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 13H13V19H11V13H5V11H11V5H13V11H19V13Z" fill="black"/>
+        </svg>
+        <span>Add Card</span>
+      </button>
+      
+      <div class="ai-section">
+        <h2 class="ai-title">Generate Cards With AI</h2>
+        <textarea id="ai-input" class="ai-textarea" placeholder="Enter a topic or paste study material here, and AI will generate flashcards for you..."></textarea>
+        <button type="button" class="generate-btn" id="generate-ai-btn">Generate</button>
+      </div>
+      
+      <%= form.submit "Save Changes", class: "save-btn" %>
+    <% end %>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Add new card fields
+    document.getElementById('add-card-btn').addEventListener('click', function() {
+      const container = document.getElementById('card-fields-container');
+      const newRow = document.createElement('div');
+      newRow.className = 'card-row';
+      newRow.innerHTML = `
+        <div class="card-columns">
+          <div class="card-column">
+            <textarea class="card-textarea" name="flash_card_set[cards][][front]" placeholder="Enter front side content"></textarea>
+          </div>
+          
+          <div class="card-column">
+            <textarea class="card-textarea" name="flash_card_set[cards][][back]" placeholder="Enter back side content"></textarea>
+          </div>
+        </div>
+      `;
+      container.appendChild(newRow);
+    });
+    
+    // AI Generation (placeholder for future implementation)
+    document.getElementById('generate-ai-btn').addEventListener('click', function() {
+      alert('AI generation will be implemented in the future.');
+    });
+  });
+</script>

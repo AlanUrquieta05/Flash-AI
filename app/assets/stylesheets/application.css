@@ -8,3 +8,7 @@
  *
  * Consider organizing styles into separate files for maintainability.
  */
+
+@import 'flash_card_sets';
+@import 'flash_card_study';
+@import 'flash_card_form';

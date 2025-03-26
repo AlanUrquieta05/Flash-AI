@@ -1,0 +1,171 @@
+<% content_for :head do %>
+  <%= stylesheet_link_tag 'flash_card_study', media: 'all' %>
+<% end %>
+
+<div class="study-container">
+  <!-- Header -->
+  <div class="study-header">
+    <div class="logo">Flash-AI</div>
+    <h1 class="set-title"><%= @flash_card_set.name %></h1>
+    <a href="#" class="create-test-btn">
+      Create Test
+      <span class="arrow">▶</span>
+    </a>
+  </div>
+  
+  <!-- Back to home link -->
+  <a href="<%= flash_card_sets_path %>" class="back-link">Back to home</a>
+  
+  <!-- Flash Card View -->
+  <div class="flashcard-container">
+    <div class="nav-button prev-button">
+      <span>&#10094;</span>
+    </div>
+    
+    <div class="flashcard">
+      <div id="card-content" class="card-content">
+        <!-- Card content will be inserted here by JavaScript -->
+      </div>
+    </div>
+    
+    <div class="nav-button next-button">
+      <span>&#10095;</span>
+    </div>
+  </div>
+  
+  <!-- Flip Button -->
+  <div class="flip-button-container">
+    <div class="flip-button">&#8635;</div>
+    <div class="flip-button" style="transform: rotate(-90deg)">&#8635;</div>
+  </div>
+  
+  <!-- Table View -->
+  <div class="table-container">
+    <div class="table-header">
+      <div class="front-column">Front</div>
+      <div class="back-column">Back</div>
+    </div>
+    
+    <div class="horizontal-divider"></div>
+    
+    <!-- Hard-coded flash cards -->
+    <div class="table-row">
+      <div class="table-cell front-column">
+        What is the capital of France?
+      </div>
+      <div class="table-cell">
+        Paris
+      </div>
+    </div>
+    <div class="horizontal-divider"></div>
+    
+    <div class="table-row">
+      <div class="table-cell front-column">
+        What is the largest planet in our solar system?
+      </div>
+      <div class="table-cell">
+        Jupiter
+      </div>
+    </div>
+    <div class="horizontal-divider"></div>
+    
+    <div class="table-row">
+      <div class="table-cell front-column">
+        Who wrote "Romeo and Juliet"?
+      </div>
+      <div class="table-cell">
+        William Shakespeare
+      </div>
+    </div>
+    <div class="horizontal-divider"></div>
+    
+    <div class="table-row">
+      <div class="table-cell front-column">
+        What is the chemical symbol for gold?
+      </div>
+      <div class="table-cell">
+        Au
+      </div>
+    </div>
+    <div class="horizontal-divider"></div>
+  </div>
+</div>
+
+<script>
+  // Wrap in an IIFE to avoid global scope pollution
+  (function() {
+    // Define the cards data
+    const flashCards = [
+      { front: "What is the capital of France?", back: "Paris" },
+      { front: "What is the largest planet in our solar system?", back: "Jupiter" },
+      { front: "Who wrote 'Romeo and Juliet'?", back: "William Shakespeare" },
+      { front: "What is the chemical symbol for gold?", back: "Au" }
+    ];
+    
+    // Initialize variables
+    let currentCardIndex = 0;
+    let isShowingFront = true;
+    
+    // Function to update card display
+    function updateCardDisplay() {
+      const cardContent = document.getElementById('card-content');
+      if (!cardContent) return;
+      
+      if (isShowingFront) {
+        cardContent.innerHTML = `<strong>Front</strong><br><br>${flashCards[currentCardIndex].front}`;
+      } else {
+        cardContent.innerHTML = `<strong>Back</strong><br><br>${flashCards[currentCardIndex].back}`;
+      }
+    }
+    
+    // Function to handle flip button clicks
+    function handleFlipClick() {
+      isShowingFront = !isShowingFront;
+      updateCardDisplay();
+    }
+    
+    // Function to handle previous button clicks
+    function handlePrevClick() {
+      currentCardIndex = (currentCardIndex - 1 + flashCards.length) % flashCards.length;
+      isShowingFront = true;
+      updateCardDisplay();
+    }
+    
+    // Function to handle next button clicks
+    function handleNextClick() {
+      currentCardIndex = (currentCardIndex + 1) % flashCards.length;
+      isShowingFront = true;
+      updateCardDisplay();
+    }
+    
+    // Add event listeners to buttons
+    document.querySelectorAll('.flip-button').forEach(button => {
+      button.removeEventListener('click', handleFlipClick); // Remove any existing listener
+      button.addEventListener('click', handleFlipClick);
+    });
+    
+    const prevButton = document.querySelector('.prev-button');
+    if (prevButton) {
+      prevButton.removeEventListener('click', handlePrevClick); // Remove any existing listener
+      prevButton.addEventListener('click', handlePrevClick);
+    }
+    
+    const nextButton = document.querySelector('.next-button');
+    if (nextButton) {
+      nextButton.removeEventListener('click', handleNextClick); // Remove any existing listener
+      nextButton.addEventListener('click', handleNextClick);
+    }
+    
+    // Initialize the display
+    updateCardDisplay();
+  })();
+  
+  // Re-initialize on turbolinks navigation
+  document.addEventListener('turbolinks:load', function() {
+    // This will trigger the script to re-run after turbolinks navigation
+    const cardContent = document.getElementById('card-content');
+    if (cardContent) {
+      cardContent.innerHTML = '<strong>Front</strong><br><br>What is the capital of France?';
+    }
+  });
+</script>

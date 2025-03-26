@@ -1,0 +1,2 @@
+class FlashCardSet < ApplicationRecord
+end
