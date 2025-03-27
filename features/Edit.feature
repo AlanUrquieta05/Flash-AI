@@ -15,7 +15,7 @@ And I click confirm
 And I click save changes
 Then The card should be deleted
 
-Scenatio: Deleting a set
+Scenario: Deleting a set
 Given I am on the edit set page
 When I click delete set
 And I click confirm
