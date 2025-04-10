@@ -4,6 +4,8 @@ class FlashCardSetsController < ApplicationController
   # GET /flash_card_sets or /flash_card_sets.json
   def index
     @flash_card_sets = FlashCardSet.where(user_mail: current_user.email_address)
+                                  .select(:id, :name, :user_mail, :length, :favorite)
+                                  .order(updated_at: :desc)
   end
 
   # GET /flash_card_sets/1 or /flash_card_sets/1.json
@@ -13,6 +15,7 @@ class FlashCardSetsController < ApplicationController
     # Log info for debugging
     Rails.logger.debug("Accessing FlashCardSet ##{@flash_card_set.id} in format: #{request.format}")
     
+    # Use eager loading for associated data if needed
     respond_to do |format|
       format.html # show.html.erb
       format.json do
@@ -306,6 +309,8 @@ class FlashCardSetsController < ApplicationController
     # Use callbacks to share common setup or constraints between actions.
     def set_flash_card_set
       @flash_card_set = FlashCardSet.find(params[:id])
+      # Cache cards result to avoid repeated CSV parsing
+      @flash_card_set.cards if params[:action] == 'show'
     end
 
     # Only allow a list of trusted parameters through.

@@ -13,83 +13,45 @@ class FlashCardSet < ApplicationRecord
       # First, try to detect and fix any obvious formatting issues
       content = flashcards.strip
       
-      # If content looks like it has pipes instead of commas (markdown table)
-      if content.include?('|') && !content.include?(',')
-        Rails.logger.info("Content appears to be a markdown table, converting")
-        fixed_content = "front,back\n"
-        content.split("\n").each do |line|
-          if line.include?('|')
-            parts = line.split('|').map(&:strip).reject(&:empty?)
-            if parts.length >= 2 && !line.include?('-+-')
-              front = parts[0].gsub(',', ' ')
-              back = parts[1].gsub(',', ' ')
-              fixed_content += "#{front},#{back}\n" if front.present?
+      # Use memoization to avoid parsing CSV multiple times
+      @parsed_cards ||= begin
+        # If content looks like it has pipes instead of commas (markdown table)
+        if content.include?('|') && !content.include?(',')
+          fixed_content = "front,back\n"
+          content.split("\n").each do |line|
+            if line.include?('|')
+              parts = line.split('|').map(&:strip).reject(&:empty?)
+              if parts.length >= 2 && !line.include?('-+-')
+                front = parts[0].gsub(',', ' ')
+                back = parts[1].gsub(',', ' ')
+                fixed_content += "#{front},#{back}\n" if front.present?
+              end
             end
           end
+          self.flashcards = fixed_content
+          content = fixed_content
         end
-        self.flashcards = fixed_content
-        content = fixed_content
+        
+        # Now parse the CSV
+        CSV.parse(content, headers: true)
       end
       
-      # Now parse the CSV
-      parsed_cards = CSV.parse(content, headers: true)
+      # Map rows to hash with fallbacks for missing values - use more efficient mapping
+      headers = @parsed_cards.headers
       
-      # Log info about parsed cards
-      Rails.logger.info("Parsed #{parsed_cards.count} cards from CSV")
-      
-      # Check column names
-      headers = parsed_cards.headers
-      Rails.logger.info("CSV headers: #{headers.inspect}")
-      
-      # Map rows to hash with fallbacks for missing values
-      cards_array = parsed_cards.map do |row|
-        # Try both front/back and Front/Back headers
-        front_val = nil
-        back_val = nil
-        
-        # Check each header case
-        if headers.include?("front")
-          front_val = row["front"]
-        elsif headers.include?("Front")
-          front_val = row["Front"]
-        end
-        
-        if headers.include?("back")
-          back_val = row["back"]
-        elsif headers.include?("Back")
-          back_val = row["Back"]
-        end
-        
-        # If we still don't have values, try accessing by index
-        if front_val.nil? && row.fields[0].present?
-          front_val = row.fields[0]
-          Rails.logger.info("Using first field as front: #{front_val}")
-        end
-        
-        if back_val.nil? && row.fields.length > 1 && row.fields[1].present?
-          back_val = row.fields[1]
-          Rails.logger.info("Using second field as back: #{back_val}")
-        end
+      cards_array = @parsed_cards.map do |row|
+        # Try both front/back and Front/Back headers - more efficiently
+        front_val = row["front"] || row["Front"] || row.fields[0]
+        back_val = row["back"] || row["Back"] || (row.fields.length > 1 ? row.fields[1] : nil)
         
         front = front_val.presence || "Empty Card"
         back = back_val.presence || "No definition available"
-        
-        # Log any cards with missing backs
-        if back_val.blank?
-          Rails.logger.warn("Card missing back content: Front: #{front[0...30]}")
-        end
-        
-        # Log the final card data
-        Rails.logger.debug("Card: Front='#{front[0...30]}...', Back='#{back[0...30]}...'")
         
         { front: front, back: back }
       end
       
       return cards_array
     rescue CSV::MalformedCSVError => e
-      Rails.logger.error("CSV Parse Error: #{e.message}")
-      Rails.logger.error("Content causing error: #{flashcards[0..100]}")
-      
       # Fallback: try to manually parse by lines and looking for commas
       begin
         lines = flashcards.split("\n").drop(1) # Skip header
@@ -104,7 +66,6 @@ class FlashCardSet < ApplicationRecord
           end
         end
         
-        Rails.logger.info("Fallback parsing recovered #{cards.size} cards")
         return cards unless cards.empty?
       rescue => fallback_error
         Rails.logger.error("Fallback parsing failed: #{fallback_error.message}")
@@ -113,12 +74,14 @@ class FlashCardSet < ApplicationRecord
       [] # Return empty array if all parsing fails
     rescue StandardError => e
       Rails.logger.error("Unexpected error in cards method: #{e.message}")
-      Rails.logger.error(e.backtrace.join("\n"))
       []
     end
   end
   
   def cards=(card_data)
+    # Reset memoization
+    @parsed_cards = nil
+    
     return if card_data.blank?
     
     csv_data = CSV.generate do |csv|

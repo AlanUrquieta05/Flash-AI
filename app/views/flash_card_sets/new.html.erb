@@ -40,7 +40,7 @@
 <a href="<%= flash_card_sets_path %>" class="form-page-back-link">Back to home</a>
 
 <div class="main-content">
-  <div class="form-container">
+  <div class="form-container" style="width: 100%; max-width: 100%; padding: 0 2rem;">
     <%= form_with(model: @flash_card_set, local: true, class: "card-form") do |form| %>
       <div class="form-group">
         <%= form.text_field :name, class: "deck-name-input", placeholder: "Enter Deck Name" %>

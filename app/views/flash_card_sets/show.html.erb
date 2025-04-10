@@ -2,41 +2,66 @@
   <%= stylesheet_link_tag 'flash_card_study', media: 'all' %>
 <% end %>
 
-<div class="study-container">
+<% content_for :title do %>
+  <%= @flash_card_set.name %> | Flash-AI
+<% end %>
+
+<div class="study-container" style="width: 100%; max-width: 100%;">
   <!-- Header -->
   <div class="study-header">
-    <div class="logo">Flash-AI</div>
+    <div class="logo">
+      <i class="fas fa-bolt"></i> Flash-AI
+    </div>
     <h1 class="set-title"><%= @flash_card_set.name %></h1>
     <a href="#" class="create-test-btn">
       Create Test
-      <span class="arrow">▶</span>
+      <i class="fas fa-chevron-right"></i>
     </a>
   </div>
   
   <!-- Back to home link -->
-  <a href="<%= flash_card_sets_path %>" class="back-link">Back to home</a>
+  <a href="<%= flash_card_sets_path %>" class="back-link">
+    <i class="fas fa-arrow-left"></i> Back to home
+  </a>
+  
+  <!-- Card Counter and Progress -->
+  <div class="card-counter">Card <span id="current-card-num">1</span> of <span id="total-cards"><%= @flash_card_set.cards.size %></span></div>
+  
+  <div class="progress-bar-container">
+    <div id="progress-bar" class="progress-bar" style="width: <%= 100.0 / @flash_card_set.cards.size %>%;"></div>
+  </div>
   
   <!-- Flash Card View -->
   <div class="flashcard-container">
     <div class="nav-button prev-button">
-      <span>&#10094;</span>
+      <i class="fas fa-chevron-left"></i>
     </div>
     
-    <div class="flashcard">
-      <div id="card-content" class="card-content">
-        <!-- Card content will be inserted here by JavaScript -->
+    <div class="flashcard" id="flashcard">
+      <div class="card-side-indicator" id="card-side">Front</div>
+      <div id="front-content" class="card-content">
+        <!-- Front content will be inserted here by JavaScript -->
+      </div>
+      <div id="back-content" class="card-content back-content">
+        <!-- Back content will be inserted here by JavaScript -->
       </div>
     </div>
     
     <div class="nav-button next-button">
-      <span>&#10095;</span>
+      <i class="fas fa-chevron-right"></i>
     </div>
   </div>
   
   <!-- Flip Button -->
   <div class="flip-button-container">
-    <div class="flip-button">&#8635;</div>
-    <div class="flip-button" style="transform: rotate(-90deg)">&#8635;</div>
+    <div class="flip-button" id="flip-btn">
+      <i class="fas fa-sync-alt"></i>
+    </div>
+  </div>
+  
+  <!-- Card Progress Navigation -->
+  <div class="card-progress-navigation" id="card-progress-dots">
+    <!-- Progress dots will be added by JavaScript -->
   </div>
   
   <!-- Table View -->
@@ -82,19 +107,52 @@
     let currentCardIndex = 0;
     let isShowingFront = true;
     
+    // Cache DOM elements
+    const flashcard = document.getElementById('flashcard');
+    const frontContent = document.getElementById('front-content');
+    const backContent = document.getElementById('back-content');
+    const cardSide = document.getElementById('card-side');
+    const currentCardNum = document.getElementById('current-card-num');
+    const totalCards = document.getElementById('total-cards');
+    const progressBar = document.getElementById('progress-bar');
+    const flipBtn = document.getElementById('flip-btn');
+    const prevButton = document.querySelector('.prev-button');
+    const nextButton = document.querySelector('.next-button');
+    const cardProgressDots = document.getElementById('card-progress-dots');
+    
     // Function to update card display
     function updateCardDisplay() {
-      const cardContent = document.getElementById('card-content');
-      if (!cardContent || flashCards.length === 0) {
-        cardContent.innerHTML = "No flashcards found for this set";
+      if (!frontContent || !backContent || flashCards.length === 0) {
+        frontContent.innerHTML = "No flashcards found for this set";
         return;
       }
       
+      // Update front and back content
+      frontContent.innerHTML = `<strong>Front</strong>${flashCards[currentCardIndex].front}`;
+      backContent.innerHTML = `<strong>Back</strong>${flashCards[currentCardIndex].back}`;
+      
+      // Update card side indicator
+      cardSide.textContent = isShowingFront ? 'Front' : 'Back';
+      
+      // Update card counter and progress bar
+      currentCardNum.textContent = currentCardIndex + 1;
+      progressBar.style.width = `${((currentCardIndex + 1) / flashCards.length) * 100}%`;
+      
+      // Update flip state
       if (isShowingFront) {
-        cardContent.innerHTML = `<strong>Front</strong><br><br>${flashCards[currentCardIndex].front}`;
+        flashcard.classList.remove('flipped');
       } else {
-        cardContent.innerHTML = `<strong>Back</strong><br><br>${flashCards[currentCardIndex].back}`;
+        flashcard.classList.add('flipped');
       }
+      
+      // Update active progress dot
+      document.querySelectorAll('.card-progress-dot').forEach((dot, index) => {
+        if (index === currentCardIndex) {
+          dot.classList.add('active');
+        } else {
+          dot.classList.remove('active');
+        }
+      });
     }
     
     // Function to handle flip button clicks
@@ -120,22 +178,103 @@
       updateCardDisplay();
     }
     
-    // Add event listeners to buttons
-    document.querySelectorAll('.flip-button').forEach(button => {
-      button.addEventListener('click', handleFlipClick);
-    });
+    // Function to jump to specific card
+    function jumpToCard(index) {
+      if (index < 0 || index >= flashCards.length) return;
+      currentCardIndex = index;
+      isShowingFront = true;
+      updateCardDisplay();
+    }
     
-    const prevButton = document.querySelector('.prev-button');
+    // Create progress dots
+    function createProgressDots() {
+      if (!cardProgressDots) return;
+      
+      cardProgressDots.innerHTML = '';
+      flashCards.forEach((_, index) => {
+        const dot = document.createElement('div');
+        dot.className = 'card-progress-dot';
+        if (index === currentCardIndex) {
+          dot.classList.add('active');
+        }
+        dot.addEventListener('click', () => jumpToCard(index));
+        cardProgressDots.appendChild(dot);
+      });
+    }
+    
+    // Add event listeners to buttons
+    if (flipBtn) {
+      flipBtn.addEventListener('click', handleFlipClick);
+    }
+    
     if (prevButton) {
       prevButton.addEventListener('click', handlePrevClick);
     }
     
-    const nextButton = document.querySelector('.next-button');
     if (nextButton) {
       nextButton.addEventListener('click', handleNextClick);
     }
     
+    // Add click event to the card itself for flipping
+    if (flashcard) {
+      flashcard.addEventListener('click', function(e) {
+        // Only flip if clicked on the card itself, not on buttons
+        if (e.target === flashcard || e.target === frontContent || e.target === backContent) {
+          handleFlipClick();
+        }
+      });
+    }
+    
+    // Add swipe support for mobile
+    let touchstartX = 0;
+    let touchendX = 0;
+    
+    if (flashcard) {
+      flashcard.addEventListener('touchstart', e => {
+        touchstartX = e.changedTouches[0].screenX;
+      });
+      
+      flashcard.addEventListener('touchend', e => {
+        touchendX = e.changedTouches[0].screenX;
+        handleSwipe();
+      });
+    }
+    
+    function handleSwipe() {
+      const swipeThreshold = 50;
+      if (touchendX < touchstartX - swipeThreshold) {
+        // Swipe left - next card
+        handleNextClick();
+      }
+      if (touchendX > touchstartX + swipeThreshold) {
+        // Swipe right - previous card
+        handlePrevClick();
+      }
+    }
+    
+    // Add keyboard controls for better UX
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowLeft') {
+        handlePrevClick();
+      } else if (e.key === 'ArrowRight') {
+        handleNextClick();
+      } else if (e.key === ' ' || e.key === 'Spacebar') {
+        handleFlipClick();
+        e.preventDefault(); // Prevent space from scrolling
+      }
+    });
+    
     // Initialize the display
+    createProgressDots();
     updateCardDisplay();
+    
+    // Animate entrance
+    setTimeout(() => {
+      document.querySelectorAll('.animate-on-load').forEach((el, index) => {
+        setTimeout(() => {
+          el.classList.add('animated');
+        }, 100 * index);
+      });
+    }, 100);
   })();
 </script>

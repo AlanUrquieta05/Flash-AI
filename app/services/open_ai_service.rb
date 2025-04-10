@@ -41,12 +41,8 @@ Important rules:
     if response && response["choices"] && response["choices"][0]["message"]["content"]
       content = response["choices"][0]["message"]["content"].strip
       
-      # Log the full response content for debugging
-      Rails.logger.info("FULL RESPONSE FROM OPENAI: #{content}")
-      
       # Handle potential formats: sometimes AI returns a table-like format
       if content.include?('|') && !content.include?(',')
-        Rails.logger.info("Detected table format - converting to CSV")
         # This might be a markdown table, convert to CSV
         csv_content = "front,back\n"
         content.split("\n").each do |line|
@@ -60,13 +56,11 @@ Important rules:
           end
         end
         content = csv_content
-        Rails.logger.info("Converted to CSV: #{content}")
       end
       
       # Ensure it's a properly formatted CSV with front,back header
       if !content.start_with?("front,back") && !content.start_with?("Front,Back")
         # Try to fix response that doesn't start with proper header
-        Rails.logger.warn("Response doesn't start with proper CSV header")
         content = "front,back\n" + content
       end
       
@@ -81,8 +75,6 @@ Important rules:
         end
         
         if has_empty_backs
-          Rails.logger.warn("Some cards are missing 'back' content - trying to fix")
-          
           # Fix CSV by ensuring each row has both front and back
           fixed_content = "front,back\n"
           parsed_data.each do |row|
@@ -106,11 +98,8 @@ Important rules:
             fixed_content += "#{front},#{back}\n"
           end
           content = fixed_content
-          Rails.logger.info("Fixed CSV to include backs for all cards. New content: #{content}")
         end
       rescue => e
-        Rails.logger.error("Error parsing CSV response: #{e.message}")
-        Rails.logger.error("Failed content was: #{content}")
         # Return dummy response as fallback
         return dummy_response["choices"][0]["message"]["content"]
       end
@@ -129,11 +118,8 @@ Important rules:
   def make_request(prompt)
     # Return dummy data in development if no API key
     if Rails.env.development? && @api_key.blank?
-      Rails.logger.info("Using dummy response for flash card generation")
       return dummy_response
     end
-    
-    Rails.logger.info("Making OpenAI API request to #{@api_base}/chat/completions")
     
     # Extract the base URI
     uri_str = @api_base.end_with?('/') ? "#{@api_base}chat/completions" : "#{@api_base}/chat/completions"
@@ -141,6 +127,7 @@ Important rules:
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = uri.scheme == 'https'
     http.read_timeout = 60 # Increase timeout for API calls
+    http.open_timeout = 10 # Add open timeout to prevent long connection waits
     
     request = Net::HTTP::Post.new(uri)
     request["Content-Type"] = "application/json"
@@ -158,14 +145,8 @@ Important rules:
       temperature: 0.7
     }.to_json
     
-    # Log request details (without sensitive info)
-    Rails.logger.debug("Sending request to: #{uri}")
-    
     # Send the request
     response = http.request(request)
-    
-    # Log response info
-    Rails.logger.debug("Response status: #{response.code}")
     
     if response.code.to_i >= 400
       Rails.logger.error("OpenAI API error: #{response.code} - #{response.body}")
