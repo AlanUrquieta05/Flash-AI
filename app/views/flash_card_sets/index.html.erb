@@ -13,8 +13,16 @@
   <div class="create-section">
     <h1 class="create-title">Create Your Flashcards</h1>
     <div class="search-container">
-      <input type="text" class="search-input" placeholder="Enter a topic to generate AI flashcards ...">
-      <button class="generate-button">Generate</button>
+      <input type="text" class="search-input" id="ai-prompt-input" placeholder="Enter a topic to generate AI flashcards ...">
+      <button class="generate-button" id="generate-ai-btn">Generate</button>
+    </div>
+    <div id="generation-status" class="generation-status" style="display: none;">
+      <div class="spinner"></div>
+      <p>Generating flashcards...</p>
+    </div>
+    <div id="generation-error" class="generation-error" style="display: none;"></div>
+    <div class="fallback-container" style="margin-top: 10px; text-align: center;">
+      <p style="color: #555; font-size: 14px;">Not working? Try our <a href="<%= new_flash_card_set_path %>" style="color: #2079F8;">manual creation</a> or <a href="<%= flash_card_sets_path %>" id="load-sample-btn" style="color: #2079F8; cursor: pointer;">load a sample set</a></p>
     </div>
   </div>
   
@@ -97,7 +105,205 @@
   </div>
 </div>
 
+<!-- Hidden form for the generate action -->
+<div style="display: none;">
+  <%= form_with url: generate_flash_card_sets_path, method: :post, id: "generate-form" do |form| %>
+    <%= form.hidden_field :prompt, id: "hidden-prompt-field" %>
+  <% end %>
+</div>
+
 <script>
+  // Function to set prompt from localStorage immediately on page load
+  function setPromptFromStorage() {
+    const promptInput = document.getElementById('ai-prompt-input');
+    if (promptInput && (!promptInput.value || promptInput.value.trim() === '')) {
+      try {
+        const savedPrompt = localStorage.getItem('flashcard_prompt');
+        if (savedPrompt) {
+          console.log('Immediately setting saved prompt:', savedPrompt);
+          promptInput.value = savedPrompt;
+        }
+      } catch (e) {
+        console.warn('Could not read from localStorage:', e);
+      }
+    }
+  }
+
+  // Call immediately and on all navigation events
+  setPromptFromStorage();
+  document.addEventListener('DOMContentLoaded', setPromptFromStorage);
+  document.addEventListener('turbo:load', setPromptFromStorage);
+  document.addEventListener('turbo:render', setPromptFromStorage);
+  document.addEventListener('turbolinks:load', setPromptFromStorage);
+  
+  // Separate the menu functionality into a standalone function
+  function setupMenus() {
+    // Enable menu toggling on each card
+    document.querySelectorAll('[id^="menu-"]').forEach(menu => {
+      menu.style.display = 'none';
+    });
+  }
+  
+  function setupGenerateButton() {
+    const generateBtn = document.getElementById('generate-ai-btn');
+    const promptInput = document.getElementById('ai-prompt-input');
+    const statusDiv = document.getElementById('generation-status');
+    const errorDiv = document.getElementById('generation-error');
+    const generateForm = document.getElementById('generate-form');
+    const hiddenPromptField = document.getElementById('hidden-prompt-field');
+    
+    if (!generateBtn || !promptInput) {
+      console.log("Generate button or prompt input not found");
+      return;
+    }
+    
+    console.log("Setting up generate button event listeners");
+    
+    // Set up click handler for generate button
+    generateBtn.onclick = function() {
+      const prompt = promptInput.value.trim();
+      
+      if (!prompt) {
+        errorDiv.textContent = 'Please enter a topic or study material';
+        errorDiv.style.display = 'block';
+        return;
+      }
+      
+      // Show loading state
+      generateBtn.disabled = true;
+      statusDiv.style.display = 'flex';
+      errorDiv.style.display = 'none';
+      
+      console.log("Attempting to generate flashcards for prompt:", prompt);
+      
+      // Set hidden field for form submission
+      if (hiddenPromptField) {
+        hiddenPromptField.value = prompt;
+      }
+      
+      // Use fetch for the form submission to handle JSON response
+      fetch(generateForm ? generateForm.action : '<%= generate_flash_card_sets_path %>', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: JSON.stringify({ prompt: prompt })
+      })
+      .then(response => {
+        console.log("Response status:", response.status);
+        return response.json().catch(e => {
+          console.error("Failed to parse JSON response:", e);
+          return { error: "Invalid response from server" };
+        });
+      })
+      .then(data => {
+        console.log("Response data:", data);
+        if (data.success) {
+          // Redirect to the new flashcard set
+          console.log("Redirecting to:", data.redirect_url);
+          window.location.href = data.redirect_url;
+        } else {
+          // Show error
+          console.error("Generation failed:", data.error, data.details);
+          let errorMsg = data.error || 'Failed to generate flashcards';
+          if (data.details && data.details.length > 0) {
+            errorMsg += ': ' + data.details.join(', ');
+          }
+          errorDiv.textContent = errorMsg;
+          errorDiv.style.display = 'block';
+          statusDiv.style.display = 'none';
+          generateBtn.disabled = false;
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        errorDiv.textContent = 'An error occurred while generating flashcards. Please try again.';
+        errorDiv.style.display = 'block';
+        statusDiv.style.display = 'none';
+        generateBtn.disabled = false;
+      });
+    };
+    
+    // Handle input changes and store in localStorage
+    promptInput.oninput = function() {
+      try {
+        localStorage.setItem('flashcard_prompt', this.value);
+      } catch (e) {
+        console.warn('Could not save to localStorage:', e);
+      }
+    };
+    
+    // Handle Enter key press
+    promptInput.onkeypress = function(e) {
+      if (e.key === 'Enter') {
+        generateBtn.click();
+      }
+    };
+  }
+  
+  function setupSampleButton() {
+    // Add handler for sample set button
+    const loadSampleBtn = document.getElementById('load-sample-btn');
+    if (!loadSampleBtn) return;
+    
+    loadSampleBtn.onclick = function(e) {
+      e.preventDefault();
+      
+      const statusDiv = document.getElementById('generation-status');
+      const errorDiv = document.getElementById('generation-error');
+      
+      // Show loading state
+      statusDiv.style.display = 'flex';
+      errorDiv.style.display = 'none';
+      
+      // Create a sample set with biology content
+      const samplePrompt = "Basic Biology Concepts";
+      const sampleContent = `front,back
+Mitochondria,Powerhouse of the cell that generates ATP through cellular respiration
+Photosynthesis,Process by which plants convert light energy into chemical energy by using chlorophyll to capture sunlight
+DNA,Molecule that carries genetic instructions for development and functioning of all living organisms
+Cell membrane,Barrier that separates the interior of a cell from the external environment and controls what enters and exits
+Nucleus,Control center of the cell containing genetic material and responsible for cell growth and reproduction`;
+      
+      fetch('<%= flash_card_sets_path %>', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: JSON.stringify({ 
+          flash_card_set: {
+            name: 'Biology Basics (Sample)',
+            flashcards: sampleContent,
+            length: 5
+          }
+        })
+      })
+      .then(response => {
+        if (response.redirected) {
+          window.location.reload();
+          return;
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data && data.error) {
+          throw new Error(data.error);
+        }
+        window.location.reload();
+      })
+      .catch(error => {
+        console.error('Error creating sample set:', error);
+        errorDiv.textContent = 'Failed to create sample set. Please try again.';
+        errorDiv.style.display = 'block';
+        statusDiv.style.display = 'none';
+      });
+    };
+  }
+  
+  // Menu show/hide function
   function showMenu(id) {
     const menu = document.getElementById(`menu-${id}`);
     if (menu.style.display === 'none') {
@@ -118,4 +324,49 @@
       }
     });
   }
+  
+  // Initialize all functionality
+  function initializePage() {
+    console.log("Initializing page");
+    setupMenus();
+    setupGenerateButton();
+    setupSampleButton();
+  }
+  
+  // Set up for all possible navigation events
+  document.addEventListener('DOMContentLoaded', initializePage);
+  document.addEventListener('turbo:load', initializePage);
+  document.addEventListener('turbo:render', initializePage);
+  document.addEventListener('turbolinks:load', initializePage);
 </script>
+
+<style>
+  .generation-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+    color: #555;
+  }
+  
+  .spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .generation-error {
+    color: #e74c3c;
+    margin-top: 10px;
+    text-align: center;
+  }
+</style>

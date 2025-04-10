@@ -211,6 +211,43 @@ body {
   left: 0;
 }
 
+/* Generation Status and Error */
+.generation-status {
+  display: none; /* Will be shown with JS */
+  align-items: center;
+  justify-content: center;
+  margin-top: 15px;
+  color: #666;
+  font-size: 16px;
+}
+
+.spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #2079F8;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 1s linear infinite;
+  margin-right: 12px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.generation-error {
+  display: none; /* Will be shown with JS */
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 10px 15px;
+  margin-top: 15px;
+  font-size: 14px;
+  text-align: center;
+}
+
 /* Media queries */
 @media (max-width: 1500px) {
   .sets-container {

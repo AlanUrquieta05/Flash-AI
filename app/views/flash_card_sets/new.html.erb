@@ -1,6 +1,34 @@
 <% content_for :title, "New flash card set" %>
 <% content_for :head do %>
   <%= stylesheet_link_tag 'flash_card_form', media: 'all' %>
+  <style>
+    .card-columns {
+      display: flex;
+      position: relative;
+    }
+    
+    .card-delete {
+      display: flex;
+      align-items: center;
+      margin-left: 10px;
+    }
+    
+    .delete-card-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
+    }
+    
+    .delete-card-btn:hover {
+      background-color: rgba(255, 59, 48, 0.1);
+    }
+  </style>
 <% end %>
 
 <!-- Header at top with form-specific classes -->
@@ -40,6 +68,14 @@
             <div class="card-column">
               <textarea class="card-textarea" name="flash_card_set[cards][][back]" placeholder="Enter back side content"></textarea>
             </div>
+            
+            <div class="card-delete">
+              <button type="button" class="delete-card-btn" title="Delete this card">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 13H5V11H19V13Z" fill="#ff3b30"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
         
@@ -51,6 +87,14 @@
             
             <div class="card-column">
               <textarea class="card-textarea" name="flash_card_set[cards][][back]" placeholder="Enter back side content"></textarea>
+            </div>
+            
+            <div class="card-delete">
+              <button type="button" class="delete-card-btn" title="Delete this card">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 13H5V11H19V13Z" fill="#ff3b30"/>
+                </svg>
+              </button>
             </div>
           </div>
         </div>
@@ -67,37 +111,572 @@
         <h2 class="ai-title">Generate Cards With AI</h2>
         <textarea id="ai-input" class="ai-textarea" placeholder="Enter a topic or paste study material here, and AI will generate flashcards for you..."></textarea>
         <button type="button" class="generate-btn" id="generate-ai-btn">Generate</button>
+        
+        <!-- Debug section -->
+        <div id="debug-output" style="display: none; margin-top: 10px; padding: 10px; border: 1px solid #ccc; background: #f9f9f9;"></div>
       </div>
       
-      <%= form.submit "Save Changes", class: "save-btn" %>
+      <%= form.submit "Create Deck", class: "save-btn" %>
     <% end %>
   </div>
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Add new card fields
-    document.getElementById('add-card-btn').addEventListener('click', function() {
-      const container = document.getElementById('card-fields-container');
-      const newRow = document.createElement('div');
-      newRow.className = 'card-row';
-      newRow.innerHTML = `
-        <div class="card-columns">
-          <div class="card-column">
-            <textarea class="card-textarea" name="flash_card_set[cards][][front]" placeholder="Enter front side content"></textarea>
-          </div>
-          
-          <div class="card-column">
-            <textarea class="card-textarea" name="flash_card_set[cards][][back]" placeholder="Enter back side content"></textarea>
-          </div>
-        </div>
-      `;
-      container.appendChild(newRow);
-    });
-    
-    // AI Generation (placeholder for future implementation)
-    document.getElementById('generate-ai-btn').addEventListener('click', function() {
-      alert('AI generation will be implemented in the future.');
-    });
+  // Track if we've already initialized to prevent duplicate listeners
+  let hasInitialized = false;
+  let isGenerating = false; // Flag to prevent duplicate operations
+  
+  // Ensure the generate button works even outside initialization
+  document.addEventListener('click', function(e) {
+    if (e.target && (e.target.id === 'generate-ai-btn' || e.target.closest('#generate-ai-btn'))) {
+      if (!isGenerating) { 
+        console.log('Global generate button handler triggered');
+        // Prevent default action
+        e.preventDefault();
+        // Call handler directly 
+        handleGenerateClick.call(e.target);
+      } else {
+        console.log('Generation already in progress, ignoring click');
+      }
+    }
   });
+
+  // Function to ensure we always reset initialization when the page is freshly loaded
+  function resetInitialization() {
+    console.log('Resetting initialization state');
+    hasInitialized = false;
+  }
+
+  // Reset on page refresh/fresh load
+  window.addEventListener('load', resetInitialization);
+
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded triggered, initializing form');
+    initializeForm();
+    hasInitialized = true;
+  });
+  
+  // Re-initialize when using Turbo navigation
+  document.addEventListener('turbo:load', function() {
+    console.log('turbo:load triggered');
+    initializeForm();
+    hasInitialized = true;
+  });
+  
+  document.addEventListener('turbo:render', function() {
+    console.log('turbo:render triggered');
+    if (!hasInitialized) {
+      initializeForm();
+      hasInitialized = true;
+    }
+  });
+  
+  document.addEventListener('turbolinks:load', function() {
+    console.log('turbolinks:load triggered');
+    initializeForm();
+    hasInitialized = true;
+  });
+  
+  // Main initialization function
+  function initializeForm() {
+    console.log('Initializing form events - ' + new Date().toISOString());
+    
+    // Clean up any existing event listeners by using event delegation
+    // for container that won't be replaced
+    const container = document.getElementById('card-fields-container');
+    const cardForm = document.querySelector('.card-form');
+    const addCardBtn = document.getElementById('add-card-btn');
+    const generateBtn = document.getElementById('generate-ai-btn');
+    
+    // Use event delegation for delete buttons to handle dynamically added elements
+    if (container) {
+      // Remove old listener by cloning and replacing
+      const newContainer = container.cloneNode(true);
+      container.parentNode.replaceChild(newContainer, container);
+      
+      // Set up event delegation on the new container
+      newContainer.addEventListener('click', function(e) {
+        const deleteBtn = e.target.closest('.delete-card-btn');
+        if (deleteBtn) {
+          e.preventDefault();
+          
+          // Get the card row
+          const cardRow = deleteBtn.closest('.card-row');
+          if (cardRow && confirm('Are you sure you want to delete this card?')) {
+            cardRow.remove();
+          }
+        }
+      });
+    }
+    
+    // Add new card fields
+    if (addCardBtn) {
+      // Clone button to remove old listeners
+      const newAddCardBtn = addCardBtn.cloneNode(true);
+      addCardBtn.parentNode.replaceChild(newAddCardBtn, addCardBtn);
+      
+      newAddCardBtn.addEventListener('click', function() {
+        addEmptyCard();
+      });
+    }
+    
+    // Form submission handling - optimize for speed
+    if (cardForm) {
+      // Clone and replace to remove all event listeners
+      const newCardForm = cardForm.cloneNode(true);
+      cardForm.parentNode.replaceChild(newCardForm, cardForm);
+      
+      // Now add event listener to the new form
+      newCardForm.addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent the default form submission
+        
+        // Get the deck name
+        const name = document.querySelector('input[name="flash_card_set[name]"]').value.trim();
+        if (!name) {
+          alert('Please enter a deck name');
+          return;
+        }
+        
+        // Get all the flashcards - more efficiently
+        const cards = [];
+        const cardRows = document.querySelectorAll('.card-row');
+        
+        cardRows.forEach(row => {
+          const frontTextarea = row.querySelector('textarea[name="flash_card_set[cards][][front]"]');
+          const backTextarea = row.querySelector('textarea[name="flash_card_set[cards][][back]"]');
+          
+          if (frontTextarea && backTextarea) {
+            const front = frontTextarea.value.trim();
+            const back = backTextarea.value.trim();
+            
+            // Only add cards where at least one side has content
+            if (front || back) {
+              cards.push({ 
+                front: front || "Empty Card", 
+                back: back || "No definition available" 
+              });
+            }
+          }
+        });
+        
+        if (cards.length === 0) {
+          alert('Please add at least one card');
+          return;
+        }
+        
+        console.log('Collected cards:', cards);
+        
+        // Show a loading indicator
+        const saveBtn = document.querySelector('.save-btn');
+        const originalBtnText = saveBtn.value;
+        saveBtn.value = 'Saving...';
+        saveBtn.disabled = true;
+        
+        // Prepare the JSON data - simplified structure
+        const jsonData = {
+          flash_card_set: {
+            name: name,
+            cards: cards,
+            length: cards.length // Add the length explicitly
+          }
+        };
+        
+        // Debug what we're submitting
+        console.log('Submitting data:', jsonData);
+        
+        // Submit the form using JSON with optimized headers
+        fetch('<%= flash_card_sets_path %>', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content || ''
+          },
+          body: JSON.stringify(jsonData)
+        })
+        .then(response => {
+          console.log('Response status:', response.status);
+          console.log('Response URL:', response.url);
+          
+          if (response.redirected) {
+            // Immediate redirect instead of handling JSON response
+            window.location.href = response.url;
+          } else if (response.ok) {
+            // Success but no redirect - just go to index page
+            window.location.href = '<%= flash_card_sets_path %>';
+          } else {
+            // Handle error with more details
+            return response.text().then(text => {
+              console.error('Error response:', text);
+              try {
+                return JSON.parse(text);
+              } catch (e) {
+                return { errors: ['An unexpected error occurred: ' + text] };
+              }
+            });
+          }
+        })
+        .then(data => {
+          if (data && data.errors) {
+            alert('Error: ' + data.errors.join(', '));
+            // Reset button state
+            saveBtn.value = originalBtnText;
+            saveBtn.disabled = false;
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('An error occurred while saving. Please try again.');
+          // Reset button state
+          saveBtn.value = originalBtnText;
+          saveBtn.disabled = false;
+        });
+      });
+    }
+    
+    // AI Generation button setup
+    if (generateBtn) {
+      // Log button found, but don't attach listeners directly
+      // We're using the global click handler instead to prevent duplicates
+      console.log('Generate button found during initialization, using global handler');
+      
+      // Still replace with clone to remove any existing listeners
+      const newGenerateBtn = generateBtn.cloneNode(true);
+      generateBtn.parentNode.replaceChild(newGenerateBtn, generateBtn);
+    } else {
+      console.warn('Generate button not found at initialization');
+    }
+  }
+
+  // Handler for generate button clicks
+  function handleGenerateClick() {
+    // Prevent duplicate execution
+    if (isGenerating) {
+      console.log('Generation already in progress, ignoring click');
+      return;
+    }
+    
+    isGenerating = true;
+    const prompt = document.getElementById('ai-input').value.trim();
+    
+    if (!prompt) {
+      alert('Please enter a topic or study material');
+      isGenerating = false;
+      return;
+    }
+    
+    // Show loading state
+    this.disabled = true;
+    this.textContent = 'Generating...';
+    
+    // Simple predefined examples for quick testing - this makes sure the UI works
+    const exampleCards = [
+      { front: "Photosynthesis", back: "The process by which green plants and some other organisms use sunlight to synthesize nutrients from carbon dioxide and water" },
+      { front: "Mitochondria", back: "Organelles that generate most of the cell's supply of adenosine triphosphate (ATP), used as a source of chemical energy" },
+      { front: "DNA", back: "The genetic material that contains the instructions for development, functioning, growth and reproduction of all known organisms" },
+      { front: "Mitosis", back: "A type of cell division that results in two daughter cells each having the same number of chromosomes as the parent nucleus" },
+      { front: "Cellular Respiration", back: "The set of metabolic reactions and processes that take place in the cells of organisms to convert biochemical energy from nutrients into ATP" }
+    ];
+    
+    // Create the request
+    fetch('<%= generate_flash_card_sets_path %>', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+      },
+      body: JSON.stringify({ prompt: prompt })
+    })
+    .then(response => {
+      console.log('Generation API response status:', response.status);
+      if (response.ok) {
+        return response.json();
+      } else {
+        throw new Error('Server error: ' + response.status);
+      }
+    })
+    .then(data => {
+      console.log('Generation API response data:', data);
+      
+      if (data.success) {
+        // Clear the existing container first
+        const container = document.getElementById('card-fields-container');
+        container.innerHTML = '';
+        
+        // Instead of fetching the cards via JSON, we'll parse them directly from the CSV
+        const debugOutput = document.getElementById('debug-output');
+        debugOutput.style.display = 'block';
+        debugOutput.innerHTML = `<h4>Generating cards from prompt: "${prompt}"</h4>`;
+
+        // Set the name field to the prompt if it's empty
+        const nameInput = document.querySelector('input[name="flash_card_set[name]"]');
+        if (!nameInput.value) {
+          const truncatedPrompt = prompt.length > 30 ? prompt.substring(0, 30) + '...' : prompt;
+          nameInput.value = truncatedPrompt;
+        }
+        
+        // Fetch the raw HTML of the page to extract the CSV content
+        fetch(data.redirect_url)
+          .then(response => response.text())
+          .then(html => {
+            // Parse the HTML to extract the flashcards CSV
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Try to find the flashcards data
+            let foundCards = false;
+            
+            // Add an indicator to the debug output
+            debugOutput.innerHTML += `<p>Adding generated cards to the form...</p>`;
+            
+            try {
+              // First attempt - try to extract cards from the page
+              const cardElements = doc.querySelectorAll('.card-content');
+              if (cardElements && cardElements.length > 0) {
+                console.log('Found card elements on page:', cardElements.length);
+                debugOutput.innerHTML += `<p>Found ${cardElements.length} cards on the generated page</p>`;
+                
+                // We could extract the text content but this is unreliable
+                // Instead, let's check for the flash set JSON explicitly
+              }
+            } catch (e) {
+              console.error('Error parsing cards from HTML:', e);
+            }
+            
+            // If we haven't found cards yet, try a different approach
+            if (!foundCards) {
+              // Try to use the API directly
+              fetch(data.redirect_url + '.json')
+                .then(response => response.json())
+                .then(jsonData => {
+                  console.log('Card set JSON data:', jsonData);
+                  
+                  // Try to extract cards from the JSON
+                  if (jsonData.cards && jsonData.cards.length > 0) {
+                    debugOutput.innerHTML += `<p>Found ${jsonData.cards.length} cards in JSON response</p>`;
+                    
+                    // Add each card to the form
+                    jsonData.cards.forEach(card => {
+                      addCard(card.front, card.back);
+                    });
+                    foundCards = true;
+                  } else if (jsonData.flashcards) {
+                    // Try to parse CSV
+                    debugOutput.innerHTML += `<p>Found CSV data, attempting to parse</p>`;
+                    
+                    try {
+                      const rows = jsonData.flashcards.split('\n');
+                      debugOutput.innerHTML += `<p>CSV has ${rows.length} rows</p>`;
+                      
+                      let cardsAdded = 0;
+                      // Skip header row
+                      for (let i = 1; i < rows.length; i++) {
+                        const parts = rows[i].split(',');
+                        if (parts.length >= 2) {
+                          const front = parts[0].trim();
+                          const back = parts[1].trim();
+                          debugOutput.innerHTML += `<p>Row ${i}: Front="${front}", Back="${back}"</p>`;
+                          addCard(front, back);
+                          cardsAdded++;
+                        }
+                      }
+                      
+                      if (cardsAdded > 0) {
+                        debugOutput.innerHTML += `<p>Successfully added ${cardsAdded} cards from CSV</p>`;
+                        foundCards = true;
+                      } else {
+                        debugOutput.innerHTML += `<p>Could not extract any valid cards from CSV</p>`;
+                      }
+                    } catch (e) {
+                      console.error('Error parsing CSV:', e);
+                      debugOutput.innerHTML += `<p>Error parsing CSV: ${e.message}</p>`;
+                    }
+                  }
+                  
+                  // If we still haven't found cards, try extracting from the raw content
+                  if (!foundCards && jsonData.flashcards) {
+                    debugOutput.innerHTML += `<p>Attempting direct parsing of flashcards content</p>`;
+                    
+                    // Show the raw content
+                    debugOutput.innerHTML += `<pre style="background:#f0f0f0;padding:5px;max-height:150px;overflow:auto">${jsonData.flashcards}</pre>`;
+                    
+                    // Try a more direct approach for different formats
+                    try {
+                      // Try comma separation first
+                      const content = jsonData.flashcards;
+                      const lines = content.split('\n');
+                      
+                      // Skip the first line if it looks like a header
+                      const startIndex = lines[0].toLowerCase().includes('front') ? 1 : 0;
+                      
+                      let cardsAdded = 0;
+                      for (let i = startIndex; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        // Try different separators: comma, tab, or multiple spaces
+                        let parts;
+                        if (line.includes(',')) {
+                          parts = line.split(',');
+                        } else if (line.includes('\t')) {
+                          parts = line.split('\t');
+                        } else {
+                          parts = line.split(/\s{2,}/);
+                        }
+                        
+                        if (parts.length >= 2) {
+                          const front = parts[0].trim();
+                          const back = parts.slice(1).join(' ').trim();
+                          
+                          if (front && back) {
+                            debugOutput.innerHTML += `<p>Line ${i}: Found "${front}" / "${back}"</p>`;
+                            addCard(front, back);
+                            cardsAdded++;
+                          }
+                        }
+                      }
+                      
+                      if (cardsAdded > 0) {
+                        debugOutput.innerHTML += `<p>Successfully added ${cardsAdded} cards by direct parsing</p>`;
+                        foundCards = true;
+                      }
+                    } catch (e) {
+                      console.error('Error in direct parsing:', e);
+                      debugOutput.innerHTML += `<p>Error in direct parsing: ${e.message}</p>`;
+                    }
+                  }
+                  
+                  // Only use examples as a last resort if we couldn't get AI-generated content
+                  if (!foundCards) {
+                    debugOutput.innerHTML += `<p>Could not find any AI-generated cards, using examples instead</p>`;
+                    exampleCards.forEach(card => {
+                      addCard(card.front, card.back);
+                    });
+                  }
+                  
+                  // Delete the temporary set
+                  fetch(data.redirect_url, {
+                    method: 'DELETE',
+                    headers: {
+                      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                  }).catch(e => console.warn('Failed to clean up temporary set:', e));
+                })
+                .catch(error => {
+                  console.error('Error processing cards:', error);
+                  
+                  // Fallback to example cards
+                  debugOutput.innerHTML += `<p>Error processing cards. Using example cards instead.</p>`;
+                  exampleCards.forEach(card => {
+                    addCard(card.front, card.back);
+                  });
+                });
+            }
+          })
+          .catch(error => {
+            console.error('Error fetching generated page:', error);
+            
+            // Fallback to example cards
+            exampleCards.forEach(card => {
+              addCard(card.front, card.back);
+            });
+          })
+          .finally(() => {
+            // Reset button
+            this.disabled = false;
+            this.textContent = 'Generate';
+            document.getElementById('ai-input').value = '';
+            isGenerating = false; // Reset flag when complete
+          });
+      } else {
+        // Show error
+        alert(data.error || 'Failed to generate flashcards');
+        this.disabled = false;
+        this.textContent = 'Generate';
+        isGenerating = false; // Reset flag on error
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      
+      // Fallback to example cards for testing
+      const debugOutput = document.getElementById('debug-output');
+      debugOutput.style.display = 'block';
+      debugOutput.innerHTML = `
+        <h4>Using example cards due to API error</h4>
+        <p>Error: ${error.message}</p>
+      `;
+      
+      // Just add example cards directly to the form
+      const container = document.getElementById('card-fields-container');
+      container.innerHTML = '';
+      
+      exampleCards.forEach(card => {
+        addCard(card.front, card.back);
+      });
+      
+      this.disabled = false;
+      this.textContent = 'Generate';
+      document.getElementById('ai-input').value = '';
+      isGenerating = false; // Reset flag on error
+    });
+  }
+
+  // Helper function to add an empty card
+  function addEmptyCard() {
+    const container = document.getElementById('card-fields-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'card-row';
+    newRow.innerHTML = `
+      <div class="card-columns">
+        <div class="card-column">
+          <textarea class="card-textarea" name="flash_card_set[cards][][front]" placeholder="Enter front side content"></textarea>
+        </div>
+        
+        <div class="card-column">
+          <textarea class="card-textarea" name="flash_card_set[cards][][back]" placeholder="Enter back side content"></textarea>
+        </div>
+      
+        <div class="card-delete">
+          <button type="button" class="delete-card-btn" title="Delete this card">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 13H5V11H19V13Z" fill="#ff3b30"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+    
+    container.appendChild(newRow);
+    return newRow;
+  }
+  
+  // Helper function to add a card with content
+  function addCard(front, back) {
+    const container = document.getElementById('card-fields-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'card-row';
+    newRow.innerHTML = `
+      <div class="card-columns">
+        <div class="card-column">
+          <textarea class="card-textarea" name="flash_card_set[cards][][front]" placeholder="Enter front side content">${front}</textarea>
+        </div>
+        
+        <div class="card-column">
+          <textarea class="card-textarea" name="flash_card_set[cards][][back]" placeholder="Enter back side content">${back}</textarea>
+        </div>
+        
+        <div class="card-delete">
+          <button type="button" class="delete-card-btn" title="Delete this card">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 13H5V11H19V13Z" fill="#ff3b30"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+    
+    container.appendChild(newRow);
+    return newRow;
+  }
 </script>

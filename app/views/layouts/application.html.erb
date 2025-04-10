@@ -21,10 +21,23 @@
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
     
-    <%# This script fixes form submissions when the app is hosted on services like GitHub, Render, etc. %>
+    <%# Helper script for CSRF handling and URL fixing %>
     <script>
-      // Fix for environment differences with CSRF protection
+      // This ensures that the CSRF token is properly handled during Turbo navigation
+      // and fixes URLs when deployed to various environments
       document.addEventListener('turbo:load', function() {
+        // Refresh CSRF token in all forms after navigation
+        var token = document.querySelector('meta[name="csrf-token"]').content;
+        
+        // Update all forms
+        document.querySelectorAll('form input[name="authenticity_token"]').forEach(function(input) {
+          input.value = token;
+        });
+        
+        // Make token available for fetch/XHR calls
+        window.csrfToken = token;
+        
+        // Fix for environment differences with CSRF protection
         // Get the current base URL from the page
         var currentBaseUrl = window.location.origin;
         
@@ -51,6 +64,22 @@
             }
           }
         });
+        
+        // Restore prompt value from localStorage
+        setTimeout(function() {
+          const promptInput = document.getElementById('ai-prompt-input');
+          if (promptInput) {
+            try {
+              const savedPrompt = localStorage.getItem('flashcard_prompt');
+              if (savedPrompt && promptInput.value === '') {
+                console.log('Restoring saved prompt value from localStorage');
+                promptInput.value = savedPrompt;
+              }
+            } catch (e) {
+              console.warn('Could not restore from localStorage:', e);
+            }
+          }
+        }, 100); // Small delay to ensure DOM is ready
       });
     </script>
   </head>
