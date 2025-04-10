@@ -1,57 +1,89 @@
 <% content_for :head do %>
   <%= stylesheet_link_tag 'flash_card_sets' %>
 <% end %>
+
+<% content_for :title do %>
+  Flash-AI - Your Smart Flashcards
+<% end %>
   
 <div class="page-container">
   <!-- Header -->
   <div class="header">
-    <div class="logo">Flash-AI</div>
-    <div class="user-icon"></div>
+    <div class="logo">
+      <i class="fas fa-bolt"></i> Flash-AI
+    </div>
+    <div class="user-icon">
+      <i class="fas fa-user"></i>
+    </div>
   </div>
   
   <!-- Create Flashcards Section -->
   <div class="create-section">
     <h1 class="create-title">Create Your Flashcards</h1>
     <div class="search-container">
-      <input type="text" class="search-input" placeholder="Enter a topic to generate AI flashcards ...">
-      <button class="generate-button">Generate</button>
+      <input type="text" class="search-input" id="ai-prompt-input" placeholder="Enter a topic to generate AI flashcards ...">
+      <button class="generate-button" id="generate-ai-btn">
+        <i class="fas fa-magic"></i> Generate
+      </button>
+    </div>
+    <div id="generation-status" class="generation-status" style="display: none;">
+      <div class="spinner"></div>
+      <p>Generating flashcards...</p>
+    </div>
+    <div id="generation-error" class="generation-error" style="display: none;"></div>
+    <div class="fallback-container">
+      <p>Not working? Try our <a href="<%= new_flash_card_set_path %>">manual creation</a> or <a href="<%= flash_card_sets_path %>" id="load-sample-btn">load a sample set</a></p>
     </div>
   </div>
   
   <!-- Flash Card Sets Section -->
-  <div class="sets-container">
+  <div class="sets-container" style="width: 100%; max-width: 100%; padding: 2rem;">
     <% if notice.present? %>
       <div class="notice"><%= notice %></div>
     <% end %>
     
-    <h2 class="sets-title">Your Flash Card Sets</h2>
+    <h2 class="sets-title">
+      <i class="fas fa-layer-group"></i> Your Flash Card Sets
+    </h2>
     
     <div class="card-grid">
       <% favorite_sets = @flash_card_sets.select(&:favorite) %>
       <% unfavorite_sets = @flash_card_sets.reject(&:favorite) %>
       
       <% if favorite_sets.any? %>
-        <% favorite_sets.each do |set| %>
-          <div class="card">
+        <% favorite_sets.each_with_index do |set, index| %>
+          <div class="card animate-on-load" style="animation-delay: <%= index * 0.05 %>s;">
             <div class="card-content">
               <div class="card-header">
-                <h3 class="card-title"><%= set.name %></h3>
+                <h3 class="card-title" title="<%= set.name %>"><%= set.name %></h3>
                 <div class="card-actions">
                   <%= form_with url: toggle_favorite_flash_card_set_path(set), method: :patch, html: {style: "display: inline;"} do |form| %>
-                    <%= form.button '★', type: "submit", class: "favorite-btn" %>
+                    <%= form.button type: "submit", class: "favorite-btn" do %>
+                      <i class="fas fa-star"></i>
+                    <% end %>
                   <% end %>
-                  <div style="position: relative; display: inline-block;">
-                    <button onclick="showMenu('<%= set.id %>')" style="background: none; border: none; cursor: pointer;">⋮</button>
-                    <div id="menu-<%= set.id %>" style="display: none; position: absolute; right: 0; background: white; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10;">
-                      <%= link_to "Edit", edit_flash_card_set_path(set), style: "display: block; padding: 8px 12px; text-decoration: none; color: black;" %>
-                      <%= button_to "Delete", flash_card_set_path(set), method: :delete, style: "background: none; border: none; width: 100%; text-align: left; padding: 8px 12px; cursor: pointer; color: #dc3545;", data: { confirm: "Are you sure you want to delete this set?" } %>
+                  <div class="dropdown-wrapper" style="position: relative;">
+                    <button class="card-menu-btn" onclick="toggleDropdown('<%= set.id %>')">
+                      <i class="fas fa-ellipsis-vertical"></i>
+                    </button>
+                    <div id="dropdown-<%= set.id %>" class="dropdown-menu">
+                      <%= link_to edit_flash_card_set_path(set) do %>
+                        <i class="fas fa-edit"></i> Edit
+                      <% end %>
+                      <%= button_to flash_card_set_path(set), method: :delete, class: "delete-btn", data: { confirm: "Are you sure you want to delete this set?" } do %>
+                        <i class="fas fa-trash-alt"></i> Delete
+                      <% end %>
                     </div>
                   </div>
                 </div>
               </div>
-              <div class="card-count"><%= pluralize(set.length, 'Card') %></div>
+              <div class="card-count">
+                <i class="fas fa-cards"></i> <%= pluralize(set.length, 'Card') %>
+              </div>
               <div class="study-button-container">
-                <a href="<%= flash_card_set_path(set) %>" class="study-button">Study</a>
+                <a href="<%= flash_card_set_path(set) %>" class="study-button">
+                  <i class="fas fa-graduation-cap"></i> Study
+                </a>
               </div>
             </div>
           </div>
@@ -59,27 +91,39 @@
       <% end %>
       
       <% if unfavorite_sets.any? %>
-        <% unfavorite_sets.each do |set| %>
-          <div class="card">
+        <% unfavorite_sets.each_with_index do |set, index| %>
+          <div class="card animate-on-load" style="animation-delay: <%= (favorite_sets.count + index) * 0.05 %>s;">
             <div class="card-content">
               <div class="card-header">
-                <h3 class="card-title"><%= set.name %></h3>
+                <h3 class="card-title" title="<%= set.name %>"><%= set.name %></h3>
                 <div class="card-actions">
                   <%= form_with url: toggle_favorite_flash_card_set_path(set), method: :patch, html: {style: "display: inline;"} do |form| %>
-                    <%= form.button '☆', type: "submit", class: "unfavorite-btn" %>
+                    <%= form.button type: "submit", class: "unfavorite-btn" do %>
+                      <i class="far fa-star"></i>
+                    <% end %>
                   <% end %>
-                  <div style="position: relative; display: inline-block;">
-                    <button onclick="showMenu('<%= set.id %>')" style="background: none; border: none; cursor: pointer;">⋮</button>
-                    <div id="menu-<%= set.id %>" style="display: none; position: absolute; right: 0; background: white; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10;">
-                      <%= link_to "Edit", edit_flash_card_set_path(set), style: "display: block; padding: 8px 12px; text-decoration: none; color: black;" %>
-                      <%= button_to "Delete", flash_card_set_path(set), method: :delete, style: "background: none; border: none; width: 100%; text-align: left; padding: 8px 12px; cursor: pointer; color: #dc3545;", data: { confirm: "Are you sure you want to delete this set?" } %>
+                  <div class="dropdown-wrapper" style="position: relative;">
+                    <button class="card-menu-btn" onclick="toggleDropdown('<%= set.id %>')">
+                      <i class="fas fa-ellipsis-vertical"></i>
+                    </button>
+                    <div id="dropdown-<%= set.id %>" class="dropdown-menu">
+                      <%= link_to edit_flash_card_set_path(set) do %>
+                        <i class="fas fa-edit"></i> Edit
+                      <% end %>
+                      <%= button_to flash_card_set_path(set), method: :delete, class: "delete-btn", data: { confirm: "Are you sure you want to delete this set?" } do %>
+                        <i class="fas fa-trash-alt"></i> Delete
+                      <% end %>
                     </div>
                   </div>
                 </div>
               </div>
-              <div class="card-count"><%= pluralize(set.length, 'Card') %></div>
+              <div class="card-count">
+                <i class="fas fa-layer-group"></i> <%= pluralize(set.length, 'Card') %>
+              </div>
               <div class="study-button-container">
-                <a href="<%= flash_card_set_path(set) %>" class="study-button">Study</a>
+                <a href="<%= flash_card_set_path(set) %>" class="study-button">
+                  <i class="fas fa-graduation-cap"></i> Study
+                </a>
               </div>
             </div>
           </div>
@@ -87,9 +131,9 @@
       <% end %>
       
       <!-- Create New Set Card (always last) -->
-      <a href="<%= new_flash_card_set_path %>" class="card create-new-card">
+      <a href="<%= new_flash_card_set_path %>" class="card create-new-card animate-on-load" style="animation-delay: <%= (@flash_card_sets.size + 1) * 0.05 %>s;">
         <div class="add-circle">
-          <span class="plus-sign">+</span>
+          <i class="fas fa-plus plus-sign"></i>
         </div>
         <span>Create New Set</span>
       </a>
@@ -97,25 +141,234 @@
   </div>
 </div>
 
+<!-- Hidden form for the generate action -->
+<div style="display: none;">
+  <%= form_with url: generate_flash_card_sets_path, method: :post, id: "generate-form" do |form| %>
+    <%= form.hidden_field :prompt, id: "hidden-prompt-field" %>
+  <% end %>
+</div>
+
 <script>
-  function showMenu(id) {
-    const menu = document.getElementById(`menu-${id}`);
-    if (menu.style.display === 'none') {
-      // Hide all other menus first
-      document.querySelectorAll('[id^="menu-"]').forEach(el => {
-        el.style.display = 'none';
-      });
-      menu.style.display = 'block';
-    } else {
-      menu.style.display = 'none';
+  // Function to set prompt from localStorage immediately on page load
+  function setPromptFromStorage() {
+    const promptInput = document.getElementById('ai-prompt-input');
+    if (promptInput && (!promptInput.value || promptInput.value.trim() === '')) {
+      try {
+        const savedPrompt = localStorage.getItem('flashcard_prompt');
+        if (savedPrompt) {
+          console.log('Immediately setting saved prompt:', savedPrompt);
+          promptInput.value = savedPrompt;
+        }
+      } catch (e) {
+        console.warn('Could not read from localStorage:', e);
+      }
+    }
+  }
+
+  // Call immediately and on all navigation events
+  setPromptFromStorage();
+  document.addEventListener('DOMContentLoaded', setPromptFromStorage);
+  document.addEventListener('turbo:load', setPromptFromStorage);
+  document.addEventListener('turbo:render', setPromptFromStorage);
+  document.addEventListener('turbolinks:load', setPromptFromStorage);
+  
+  // Function to toggle dropdown menus
+  function toggleDropdown(id) {
+    const dropdown = document.getElementById(`dropdown-${id}`);
+    const isActive = dropdown.classList.contains('active');
+    
+    // Close all dropdowns first
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+      menu.classList.remove('active');
+    });
+    
+    // Toggle the clicked dropdown
+    if (!isActive) {
+      dropdown.classList.add('active');
+      
+      // Add click outside listener
+      setTimeout(() => {
+        document.addEventListener('click', function closeDropdowns(e) {
+          if (!e.target.closest('.dropdown-wrapper')) {
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+              menu.classList.remove('active');
+            });
+            document.removeEventListener('click', closeDropdowns);
+          }
+        });
+      }, 10);
+    }
+  }
+  
+  function setupGenerateButton() {
+    const generateBtn = document.getElementById('generate-ai-btn');
+    const promptInput = document.getElementById('ai-prompt-input');
+    const statusDiv = document.getElementById('generation-status');
+    const errorDiv = document.getElementById('generation-error');
+    const generateForm = document.getElementById('generate-form');
+    const hiddenPromptField = document.getElementById('hidden-prompt-field');
+    
+    if (!generateBtn || !promptInput) {
+      console.log("Generate button or prompt input not found");
+      return;
     }
     
-    // Close menu when clicking elsewhere
-    document.addEventListener('click', function closeMenu(e) {
-      if (!e.target.closest(`#menu-${id}`) && !e.target.closest(`button[onclick="showMenu('${id}')"]`)) {
-        menu.style.display = 'none';
-        document.removeEventListener('click', closeMenu);
+    console.log("Setting up generate button event listeners");
+    
+    // Set up click handler for generate button
+    generateBtn.onclick = function() {
+      const prompt = promptInput.value.trim();
+      
+      if (!prompt) {
+        errorDiv.textContent = 'Please enter a topic or study material';
+        errorDiv.style.display = 'block';
+        return;
+      }
+      
+      // Save to localStorage
+      try {
+        localStorage.setItem('flashcard_prompt', prompt);
+      } catch (e) {
+        console.warn('Could not save to localStorage:', e);
+      }
+      
+      // Show loading state
+      generateBtn.disabled = true;
+      statusDiv.style.display = 'flex';
+      errorDiv.style.display = 'none';
+      
+      console.log("Attempting to generate flashcards for prompt:", prompt);
+      
+      // Set hidden field for form submission
+      if (hiddenPromptField) {
+        hiddenPromptField.value = prompt;
+      }
+      
+      // Use fetch for the form submission to handle JSON response
+      fetch(generateForm ? generateForm.action : '<%= generate_flash_card_sets_path %>', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: JSON.stringify({ prompt: prompt })
+      })
+      .then(response => {
+        console.log("Response status:", response.status);
+        return response.json().catch(e => {
+          console.error("Failed to parse JSON response:", e);
+          return { error: "Invalid response from server" };
+        });
+      })
+      .then(data => {
+        console.log("Response data:", data);
+        
+        if (data.error) {
+          errorDiv.textContent = data.error || "Failed to generate flashcards. Please try again.";
+          errorDiv.style.display = 'block';
+          statusDiv.style.display = 'none';
+          generateBtn.disabled = false;
+        } else if (data.redirect_url) {
+          // Handle redirect
+          window.location.href = data.redirect_url;
+        } else {
+          // Fallback if no specific action
+          window.location.reload();
+        }
+      })
+      .catch(error => {
+        console.error("Error during fetch:", error);
+        errorDiv.textContent = "An error occurred. Please try again.";
+        errorDiv.style.display = 'block';
+        statusDiv.style.display = 'none';
+        generateBtn.disabled = false;
+      });
+    };
+    
+    // Enable Enter key to trigger generate
+    promptInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !generateBtn.disabled) {
+        generateBtn.click();
       }
     });
   }
+  
+  // Set up load sample button
+  function setupLoadSampleButton() {
+    const loadSampleBtn = document.getElementById('load-sample-btn');
+    if (loadSampleBtn) {
+      loadSampleBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const samplePrompt = "Generate flashcards about basic JavaScript concepts";
+        const promptInput = document.getElementById('ai-prompt-input');
+        
+        if (promptInput) {
+          promptInput.value = samplePrompt;
+          const generateBtn = document.getElementById('generate-ai-btn');
+          if (generateBtn) {
+            generateBtn.click();
+          }
+        }
+      });
+    }
+  }
+  
+  // Initialize everything on page load
+  document.addEventListener('turbo:load', function() {
+    setupGenerateButton();
+    setupLoadSampleButton();
+    
+    // Add animation classes to cards
+    document.querySelectorAll('.animate-on-load').forEach((el, index) => {
+      setTimeout(() => {
+        el.classList.add('animated');
+      }, 100 + (index * 50));
+    });
+  });
+  
+  // Also initialize on DOMContentLoaded for first page load
+  document.addEventListener('DOMContentLoaded', function() {
+    setupGenerateButton();
+    setupLoadSampleButton();
+    
+    // Add animation classes to cards
+    document.querySelectorAll('.animate-on-load').forEach((el, index) => {
+      setTimeout(() => {
+        el.classList.add('animated');
+      }, 100 + (index * 50));
+    });
+  });
 </script>
+
+<style>
+  .generation-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+    color: #555;
+  }
+  
+  .spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .generation-error {
+    color: #e74c3c;
+    margin-top: 10px;
+    text-align: center;
+  }
+</style>

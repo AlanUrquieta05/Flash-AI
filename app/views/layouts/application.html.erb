@@ -16,15 +16,31 @@
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <%# Includes all stylesheet files in app/assets/stylesheets %>
-    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload", version: Time.current.to_i %>
     <%= javascript_importmap_tags %>
     
-    <%# This script fixes form submissions when the app is hosted on services like GitHub, Render, etc. %>
+    <%# Helper script for CSRF handling and URL fixing %>
     <script>
-      // Fix for environment differences with CSRF protection
+      // This ensures that the CSRF token is properly handled during Turbo navigation
+      // and fixes URLs when deployed to various environments
       document.addEventListener('turbo:load', function() {
+        // Refresh CSRF token in all forms after navigation
+        var token = document.querySelector('meta[name="csrf-token"]').content;
+        
+        // Update all forms
+        document.querySelectorAll('form input[name="authenticity_token"]').forEach(function(input) {
+          input.value = token;
+        });
+        
+        // Make token available for fetch/XHR calls
+        window.csrfToken = token;
+        
+        // Fix for environment differences with CSRF protection
         // Get the current base URL from the page
         var currentBaseUrl = window.location.origin;
         
@@ -51,11 +67,108 @@
             }
           }
         });
+        
+        // Restore prompt value from localStorage
+        setTimeout(function() {
+          const promptInput = document.getElementById('ai-prompt-input');
+          if (promptInput) {
+            try {
+              const savedPrompt = localStorage.getItem('flashcard_prompt');
+              if (savedPrompt && promptInput.value === '') {
+                console.log('Restoring saved prompt value from localStorage');
+                promptInput.value = savedPrompt;
+              }
+            } catch (e) {
+              console.warn('Could not restore from localStorage:', e);
+            }
+          }
+        }, 100); // Small delay to ensure DOM is ready
+        
+        // Initialize tooltips
+        document.querySelectorAll('[data-tooltip]').forEach(el => {
+          el.addEventListener('mouseenter', function() {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.textContent = this.getAttribute('data-tooltip');
+            document.body.appendChild(tooltip);
+            
+            const rect = this.getBoundingClientRect();
+            tooltip.style.top = `${rect.top - tooltip.offsetHeight - 10 + window.scrollY}px`;
+            tooltip.style.left = `${rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2) + window.scrollX}px`;
+            tooltip.style.opacity = '1';
+            
+            this.addEventListener('mouseleave', function onMouseLeave() {
+              tooltip.style.opacity = '0';
+              setTimeout(() => tooltip.remove(), 300);
+              this.removeEventListener('mouseleave', onMouseLeave);
+            });
+          });
+        });
+        
+        // Add animation classes after page load
+        document.querySelectorAll('.animate-on-load').forEach((el, index) => {
+          setTimeout(() => {
+            el.classList.add('animated');
+          }, 100 * index);
+        });
       });
     </script>
   </head>
 
   <body>
-    <%= yield %>
+    <div class="app-container" style="width: 100%; max-width: 100%; margin: 0; padding: 0;">
+      <%= yield %>
+    </div>
+    
+    <!-- Toast notification container -->
+    <div id="toast-container"></div>
+    
+    <script>
+      // Toast notification system
+      function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type} animate-on-load`;
+        
+        const icon = document.createElement('i');
+        switch(type) {
+          case 'success': icon.className = 'fas fa-check-circle'; break;
+          case 'error': icon.className = 'fas fa-exclamation-circle'; break;
+          case 'warning': icon.className = 'fas fa-exclamation-triangle'; break;
+          default: icon.className = 'fas fa-info-circle';
+        }
+        
+        toast.appendChild(icon);
+        
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = message;
+        toast.appendChild(messageSpan);
+        
+        document.getElementById('toast-container').appendChild(toast);
+        
+        setTimeout(() => {
+          toast.classList.add('animated');
+          setTimeout(() => {
+            toast.classList.remove('animated');
+            toast.classList.add('toast-hiding');
+            setTimeout(() => toast.remove(), 300);
+          }, 3000);
+        }, 10);
+      }
+      
+      // Convert Rails flash messages to toasts
+      document.addEventListener('turbo:load', function() {
+        const notice = document.querySelector('.notice');
+        if (notice) {
+          showToast(notice.textContent, 'success');
+          notice.style.display = 'none';
+        }
+        
+        const alert = document.querySelector('.alert');
+        if (alert) {
+          showToast(alert.textContent, 'error');
+          alert.style.display = 'none';
+        }
+      });
+    </script>
   </body>
 </html>

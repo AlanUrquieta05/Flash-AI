@@ -9,6 +9,10 @@ Rails.application.routes.draw do
     member do
       patch :toggle_favorite
     end
+    
+    collection do
+      post :generate
+    end
   end
 
   # Health check

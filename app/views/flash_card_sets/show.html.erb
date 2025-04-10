@@ -2,41 +2,66 @@
   <%= stylesheet_link_tag 'flash_card_study', media: 'all' %>
 <% end %>
 
-<div class="study-container">
+<% content_for :title do %>
+  <%= @flash_card_set.name %> | Flash-AI
+<% end %>
+
+<div class="study-container" style="width: 100%; max-width: 100%;">
   <!-- Header -->
   <div class="study-header">
-    <div class="logo">Flash-AI</div>
+    <div class="logo">
+      <i class="fas fa-bolt"></i> Flash-AI
+    </div>
     <h1 class="set-title"><%= @flash_card_set.name %></h1>
     <a href="#" class="create-test-btn">
       Create Test
-      <span class="arrow">▶</span>
+      <i class="fas fa-chevron-right"></i>
     </a>
   </div>
   
   <!-- Back to home link -->
-  <a href="<%= flash_card_sets_path %>" class="back-link">Back to home</a>
+  <a href="<%= flash_card_sets_path %>" class="back-link">
+    <i class="fas fa-arrow-left"></i> Back to home
+  </a>
+  
+  <!-- Card Counter and Progress -->
+  <div class="card-counter">Card <span id="current-card-num">1</span> of <span id="total-cards"><%= @flash_card_set.cards.size %></span></div>
+  
+  <div class="progress-bar-container">
+    <div id="progress-bar" class="progress-bar" style="width: <%= 100.0 / @flash_card_set.cards.size %>%;"></div>
+  </div>
   
   <!-- Flash Card View -->
   <div class="flashcard-container">
     <div class="nav-button prev-button">
-      <span>&#10094;</span>
+      <i class="fas fa-chevron-left"></i>
     </div>
     
-    <div class="flashcard">
-      <div id="card-content" class="card-content">
-        <!-- Card content will be inserted here by JavaScript -->
+    <div class="flashcard" id="flashcard">
+      <div class="card-side-indicator" id="card-side">Front</div>
+      <div id="front-content" class="card-content">
+        <!-- Front content will be inserted here by JavaScript -->
+      </div>
+      <div id="back-content" class="card-content back-content">
+        <!-- Back content will be inserted here by JavaScript -->
       </div>
     </div>
     
     <div class="nav-button next-button">
-      <span>&#10095;</span>
+      <i class="fas fa-chevron-right"></i>
     </div>
   </div>
   
   <!-- Flip Button -->
   <div class="flip-button-container">
-    <div class="flip-button">&#8635;</div>
-    <div class="flip-button" style="transform: rotate(-90deg)">&#8635;</div>
+    <div class="flip-button" id="flip-btn">
+      <i class="fas fa-sync-alt"></i>
+    </div>
+  </div>
+  
+  <!-- Card Progress Navigation -->
+  <div class="card-progress-navigation" id="card-progress-dots">
+    <!-- Progress dots will be added by JavaScript -->
   </div>
   
   <!-- Table View -->
@@ -48,84 +73,98 @@
     
     <div class="horizontal-divider"></div>
     
-    <!-- Hard-coded flash cards -->
-    <div class="table-row">
-      <div class="table-cell front-column">
-        What is the capital of France?
+    <!-- Actual flash cards from the database -->
+    <% if @flash_card_set.cards.present? %>
+      <% @flash_card_set.cards.each do |card| %>
+        <div class="table-row">
+          <div class="table-cell front-column">
+            <%= card[:front] %>
+          </div>
+          <div class="table-cell">
+            <%= card[:back] %>
+          </div>
+        </div>
+        <div class="horizontal-divider"></div>
+      <% end %>
+    <% else %>
+      <div class="table-row">
+        <div class="table-cell front-column" colspan="2">
+          No flashcards found for this set
+        </div>
       </div>
-      <div class="table-cell">
-        Paris
-      </div>
-    </div>
-    <div class="horizontal-divider"></div>
-    
-    <div class="table-row">
-      <div class="table-cell front-column">
-        What is the largest planet in our solar system?
-      </div>
-      <div class="table-cell">
-        Jupiter
-      </div>
-    </div>
-    <div class="horizontal-divider"></div>
-    
-    <div class="table-row">
-      <div class="table-cell front-column">
-        Who wrote "Romeo and Juliet"?
-      </div>
-      <div class="table-cell">
-        William Shakespeare
-      </div>
-    </div>
-    <div class="horizontal-divider"></div>
-    
-    <div class="table-row">
-      <div class="table-cell front-column">
-        What is the chemical symbol for gold?
-      </div>
-      <div class="table-cell">
-        Au
-      </div>
-    </div>
-    <div class="horizontal-divider"></div>
+      <div class="horizontal-divider"></div>
+    <% end %>
   </div>
 </div>
 
 <script>
   // Wrap in an IIFE to avoid global scope pollution
   (function() {
-    // Define the cards data
-    const flashCards = [
-      { front: "What is the capital of France?", back: "Paris" },
-      { front: "What is the largest planet in our solar system?", back: "Jupiter" },
-      { front: "Who wrote 'Romeo and Juliet'?", back: "William Shakespeare" },
-      { front: "What is the chemical symbol for gold?", back: "Au" }
-    ];
+    // Get cards data from Rails
+    const flashCards = <%= raw @flash_card_set.cards.to_json %>;
     
     // Initialize variables
     let currentCardIndex = 0;
     let isShowingFront = true;
     
+    // Cache DOM elements
+    const flashcard = document.getElementById('flashcard');
+    const frontContent = document.getElementById('front-content');
+    const backContent = document.getElementById('back-content');
+    const cardSide = document.getElementById('card-side');
+    const currentCardNum = document.getElementById('current-card-num');
+    const totalCards = document.getElementById('total-cards');
+    const progressBar = document.getElementById('progress-bar');
+    const flipBtn = document.getElementById('flip-btn');
+    const prevButton = document.querySelector('.prev-button');
+    const nextButton = document.querySelector('.next-button');
+    const cardProgressDots = document.getElementById('card-progress-dots');
+    
     // Function to update card display
     function updateCardDisplay() {
-      const cardContent = document.getElementById('card-content');
-      if (!cardContent) return;
-      
-      if (isShowingFront) {
-        cardContent.innerHTML = `<strong>Front</strong><br><br>${flashCards[currentCardIndex].front}`;
-      } else {
-        cardContent.innerHTML = `<strong>Back</strong><br><br>${flashCards[currentCardIndex].back}`;
+      if (!frontContent || !backContent || flashCards.length === 0) {
+        frontContent.innerHTML = "No flashcards found for this set";
+        return;
       }
+      
+      // Update front and back content
+      frontContent.innerHTML = `<strong>Front</strong>${flashCards[currentCardIndex].front}`;
+      backContent.innerHTML = `<strong>Back</strong>${flashCards[currentCardIndex].back}`;
+      
+      // Update card side indicator
+      cardSide.textContent = isShowingFront ? 'Front' : 'Back';
+      
+      // Update card counter and progress bar
+      currentCardNum.textContent = currentCardIndex + 1;
+      progressBar.style.width = `${((currentCardIndex + 1) / flashCards.length) * 100}%`;
+      
+      // Update flip state
+      if (isShowingFront) {
+        flashcard.classList.remove('flipped');
+      } else {
+        flashcard.classList.add('flipped');
+      }
+      
+      // Update active progress dot
+      document.querySelectorAll('.card-progress-dot').forEach((dot, index) => {
+        if (index === currentCardIndex) {
+          dot.classList.add('active');
+        } else {
+          dot.classList.remove('active');
+        }
+      });
     }
     
     // Function to handle flip button clicks
     function handleFlipClick() {
+      if (flashCards.length === 0) return;
       isShowingFront = !isShowingFront;
       updateCardDisplay();
     }
     
     // Function to handle previous button clicks
     function handlePrevClick() {
+      if (flashCards.length === 0) return;
       currentCardIndex = (currentCardIndex - 1 + flashCards.length) % flashCards.length;
       isShowingFront = true;
       updateCardDisplay();
@@ -133,39 +172,109 @@
     
     // Function to handle next button clicks
     function handleNextClick() {
+      if (flashCards.length === 0) return;
       currentCardIndex = (currentCardIndex + 1) % flashCards.length;
       isShowingFront = true;
       updateCardDisplay();
     }
     
-    // Add event listeners to buttons
-    document.querySelectorAll('.flip-button').forEach(button => {
-      button.removeEventListener('click', handleFlipClick); // Remove any existing listener
-      button.addEventListener('click', handleFlipClick);
-    });
+    // Function to jump to specific card
+    function jumpToCard(index) {
+      if (index < 0 || index >= flashCards.length) return;
+      currentCardIndex = index;
+      isShowingFront = true;
+      updateCardDisplay();
+    }
     
-    const prevButton = document.querySelector('.prev-button');
+    // Create progress dots
+    function createProgressDots() {
+      if (!cardProgressDots) return;
+      
+      cardProgressDots.innerHTML = '';
+      flashCards.forEach((_, index) => {
+        const dot = document.createElement('div');
+        dot.className = 'card-progress-dot';
+        if (index === currentCardIndex) {
+          dot.classList.add('active');
+        }
+        dot.addEventListener('click', () => jumpToCard(index));
+        cardProgressDots.appendChild(dot);
+      });
+    }
+    
+    // Add event listeners to buttons
+    if (flipBtn) {
+      flipBtn.addEventListener('click', handleFlipClick);
+    }
+    
     if (prevButton) {
-      prevButton.removeEventListener('click', handlePrevClick); // Remove any existing listener
       prevButton.addEventListener('click', handlePrevClick);
     }
     
-    const nextButton = document.querySelector('.next-button');
     if (nextButton) {
-      nextButton.removeEventListener('click', handleNextClick); // Remove any existing listener
       nextButton.addEventListener('click', handleNextClick);
     }
     
-    // Initialize the display
-    updateCardDisplay();
-  })();
-  
-  // Re-initialize on turbolinks navigation
-  document.addEventListener('turbolinks:load', function() {
-    // This will trigger the script to re-run after turbolinks navigation
-    const cardContent = document.getElementById('card-content');
-    if (cardContent) {
-      cardContent.innerHTML = '<strong>Front</strong><br><br>What is the capital of France?';
+    // Add click event to the card itself for flipping
+    if (flashcard) {
+      flashcard.addEventListener('click', function(e) {
+        // Only flip if clicked on the card itself, not on buttons
+        if (e.target === flashcard || e.target === frontContent || e.target === backContent) {
+          handleFlipClick();
+        }
+      });
     }
-  });
+    
+    // Add swipe support for mobile
+    let touchstartX = 0;
+    let touchendX = 0;
+    
+    if (flashcard) {
+      flashcard.addEventListener('touchstart', e => {
+        touchstartX = e.changedTouches[0].screenX;
+      });
+      
+      flashcard.addEventListener('touchend', e => {
+        touchendX = e.changedTouches[0].screenX;
+        handleSwipe();
+      });
+    }
+    
+    function handleSwipe() {
+      const swipeThreshold = 50;
+      if (touchendX < touchstartX - swipeThreshold) {
+        // Swipe left - next card
+        handleNextClick();
+      }
+      if (touchendX > touchstartX + swipeThreshold) {
+        // Swipe right - previous card
+        handlePrevClick();
+      }
+    }
+    
+    // Add keyboard controls for better UX
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowLeft') {
+        handlePrevClick();
+      } else if (e.key === 'ArrowRight') {
+        handleNextClick();
+      } else if (e.key === ' ' || e.key === 'Spacebar') {
+        handleFlipClick();
+        e.preventDefault(); // Prevent space from scrolling
+      }
+    });
+    
+    // Initialize the display
+    createProgressDots();
+    updateCardDisplay();
+    
+    // Animate entrance
+    setTimeout(() => {
+      document.querySelectorAll('.animate-on-load').forEach((el, index) => {
+        setTimeout(() => {
+          el.classList.add('animated');
+        }, 100 * index);
+      });
+    }, 100);
+  })();
 </script>
