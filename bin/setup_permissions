@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -e
+
+# setup_permissions
+#
+# This script ensures all necessary executables have the correct permissions,
+# which is especially important in GitHub Codespaces environments
+
+echo "Setting up executable permissions for Flash-AI project..."
+
+# Make all scripts in bin directory executable
+echo "→ Making bin directory scripts executable..."
+chmod +x bin/*
+
+# Make Ruby gems executables (like cucumber) executable
+echo "→ Making gem executables executable..."
+if [ -d "vendor/bundle" ]; then
+  find vendor/bundle -name cucumber -type f -exec chmod +x {} \;
+  find vendor/bundle -path "*/bin/*" -type f -exec chmod +x {} \;
+fi
+
+# Make any bundler binstubs executable
+echo "→ Making bundler binstubs executable..."
+if [ -d ".bundle/bin" ]; then
+  chmod +x .bundle/bin/*
+fi
+
+echo "✓ All permissions set successfully!"
+echo "You should now be able to run cucumber and other commands without permission issues." 
