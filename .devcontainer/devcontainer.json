@@ -1,20 +1,6 @@
 {
   "name": "Flash-AI Development",
-  "dockerComposeFile": "../docker-compose.yml",
-  "service": "web",
-  "workspaceFolder": "/rails",
-  
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "rebornix.ruby",
-        "kaiwood.endwise",
-        "castwide.solargraph",
-        "aliariff.vscode-erb-beautify",
-        "misogi.ruby-rubocop"
-      ]
-    }
-  },
-  
-  "postCreateCommand": "chmod +x bin/* && find vendor/bundle -name cucumber -type f -exec chmod +x {} \\; && find vendor/bundle -path \"*/bin/*\" -type f -exec chmod +x {} \\; && if [ -d \".bundle/bin\" ]; then chmod +x .bundle/bin/*; fi"
+  "image": "mcr.microsoft.com/devcontainers/ruby:3-bullseye",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "postCreateCommand": "chmod +x bin/* && if [ -d vendor/bundle ]; then find vendor/bundle -name cucumber -type f -exec chmod +x {} \\; ; fi"
 } 
