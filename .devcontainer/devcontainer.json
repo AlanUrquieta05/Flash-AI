@@ -1,0 +1,6 @@
+{
+  "name": "Flash-AI Development",
+  "image": "mcr.microsoft.com/devcontainers/ruby:3-bullseye",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "postCreateCommand": "chmod +x bin/* && if [ -d vendor/bundle ]; then find vendor/bundle -name cucumber -type f -exec chmod +x {} \\; ; fi"
+} 

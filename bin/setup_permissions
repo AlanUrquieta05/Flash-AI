@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -e
+
+# Make all scripts in bin directory executable
+chmod +x bin/*
+
+# Make cucumber executable if it exists
+if [ -d vendor/bundle ]; then
+  find vendor/bundle -name cucumber -type f -exec chmod +x {} \;
+fi
+
+echo "✓ Permissions set successfully!"

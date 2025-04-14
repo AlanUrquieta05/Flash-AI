@@ -30,3 +30,19 @@ And add:
 ```yaml
 openai_api_key: your_actual_api_key_here
 ```
+
+## GitHub Codespace Permission Issues
+
+If you encounter "permission denied" errors when running commands like `cucumber` in GitHub Codespaces:
+
+```bash
+# Run this simple command to fix permissions
+chmod +x bin/* && if [ -d vendor/bundle ]; then find vendor/bundle -name cucumber -type f -exec chmod +x {} \; ; fi
+```
+
+Or use our setup script:
+
+```bash
+chmod +x bin/setup_permissions
+./bin/setup_permissions
+```

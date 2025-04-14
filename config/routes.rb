@@ -8,6 +8,7 @@ Rails.application.routes.draw do
   resources :flash_card_sets do
     member do
       patch :toggle_favorite
+      get :test
     end
     
     collection do
