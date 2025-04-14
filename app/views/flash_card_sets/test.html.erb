@@ -1,0 +1,248 @@
+<% content_for :head do %>
+  <%= stylesheet_link_tag 'flash_card_study', media: 'all' %>
+<% end %>
+
+<% content_for :title do %>
+  Test: <%= @flash_card_set.name %> | Flash-AI
+<% end %>
+
+<div class="study-container" style="width: 100%; max-width: 100%;">
+  <!-- Header -->
+  <div class="study-header">
+    <div class="logo">
+      <i class="fas fa-bolt"></i> Flash-AI
+    </div>
+    <h1 class="set-title">Test: <%= @flash_card_set.name %></h1>
+  </div>
+  
+  <!-- Back to set link -->
+  <a href="<%= flash_card_set_path(@flash_card_set) %>" class="back-link">
+    <i class="fas fa-arrow-left"></i> Back to flash cards
+  </a>
+  
+  <!-- Test Instructions -->
+  <div class="test-instructions">
+    <p>Select the correct answer for each question. After selecting an answer, you'll see if you were right or wrong, along with an explanation.</p>
+    <p class="test-count">This test has <%= @test_questions.size %> questions based on your flashcards.</p>
+  </div>
+  
+  <!-- Test Questions -->
+  <div class="test-questions-container">
+    <% @test_questions.each_with_index do |question, index| %>
+      <% 
+        # Randomly shuffle options while ensuring proper tracking of correct answer
+        correct_letter = question[:correct]
+        
+        # Create an array with the original options
+        original_options = question[:options].map(&:dup)
+        
+        # Extract the content of each option including the correct one
+        options_content = original_options.map { |opt| opt[:text] }
+        correct_content = original_options.find { |opt| opt[:letter] == correct_letter }[:text]
+        
+        # Shuffle the options content (texts only)
+        shuffled_content = options_content.shuffle
+        
+        # Create new shuffled options with new letter assignments (A-D)
+        shuffled_options = []
+        letters = ["A", "B", "C", "D"]
+        
+        shuffled_content.each_with_index do |content, i|
+          shuffled_options << { letter: letters[i], text: content }
+          # Track where the correct answer ended up
+          if content == correct_content
+            correct_letter = letters[i]
+          end
+        end
+      %>
+      <div class="question-card" id="question-<%= index %>">
+        <div class="question-number">Question <%= index + 1 %> of <%= @test_questions.size %></div>
+        <div class="question-text"><%= question[:question] %></div>
+        
+        <div class="options-container">
+          <% shuffled_options.each do |option| %>
+            <div class="option-row" data-option="<%= option[:letter] %>" data-correct="<%= correct_letter %>">
+              <div class="option-letter"><%= option[:letter] %></div>
+              <div class="option-text"><%= option[:text] %></div>
+              <div class="option-result"></div>
+            </div>
+          <% end %>
+        </div>
+        
+        <div class="explanation-container" style="display: none;">
+          <div class="explanation-title">Explanation:</div>
+          <div class="explanation-text"><%= question[:explanation] %></div>
+        </div>
+        
+        <div class="horizontal-divider"></div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+  .test-instructions {
+    background-color: #f5f5f5;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 20px 0;
+    text-align: center;
+    color: #555;
+  }
+  
+  .test-count {
+    font-weight: bold;
+    margin-top: 8px;
+    color: #343a40;
+  }
+  
+  .question-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 25px;
+  }
+  
+  .question-number {
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+  }
+  
+  .question-text {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+  }
+  
+  .options-container {
+    margin-bottom: 15px;
+  }
+  
+  .option-row {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .option-row:hover {
+    background-color: #f5f5f5;
+  }
+  
+  .option-letter {
+    font-weight: bold;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #e9ecef;
+    border-radius: 50%;
+    margin-right: 15px;
+  }
+  
+  .option-text {
+    flex: 1;
+  }
+  
+  .option-result {
+    margin-left: 15px;
+    font-weight: bold;
+    width: 100px;
+    text-align: center;
+  }
+  
+  .option-selected {
+    background-color: #e9ecef;
+  }
+  
+  .option-correct {
+    background-color: #d4edda;
+  }
+  
+  .option-incorrect {
+    background-color: #f8d7da;
+  }
+  
+  .explanation-container {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 15px;
+  }
+  
+  .explanation-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  
+  .explanation-text {
+    color: #555;
+  }
+  
+  .correct-text {
+    color: #28a745;
+  }
+  
+  .incorrect-text {
+    color: #dc3545;
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Get all option rows
+    const optionRows = document.querySelectorAll('.option-row');
+    
+    // Add click event listeners to each option
+    optionRows.forEach(row => {
+      row.addEventListener('click', function() {
+        // If an answer is already selected in this question, do nothing
+        const questionCard = this.closest('.question-card');
+        if (questionCard.querySelector('.option-selected')) {
+          return;
+        }
+        
+        // Get the selected option and correct answer
+        const selectedOption = this.getAttribute('data-option');
+        const correctOption = this.getAttribute('data-correct');
+        
+        // Mark this option as selected
+        this.classList.add('option-selected');
+        
+        // Get all options in this question
+        const allOptionsInQuestion = questionCard.querySelectorAll('.option-row');
+        
+        // Check if the answer is correct and mark accordingly
+        if (selectedOption === correctOption) {
+          this.classList.add('option-correct');
+          this.querySelector('.option-result').textContent = 'Correct!';
+          this.querySelector('.option-result').classList.add('correct-text');
+        } else {
+          this.classList.add('option-incorrect');
+          this.querySelector('.option-result').textContent = 'Incorrect';
+          this.querySelector('.option-result').classList.add('incorrect-text');
+          
+          // Highlight the correct answer
+          allOptionsInQuestion.forEach(option => {
+            if (option.getAttribute('data-option') === correctOption) {
+              option.classList.add('option-correct');
+            }
+          });
+        }
+        
+        // Show the explanation
+        const explanationContainer = questionCard.querySelector('.explanation-container');
+        if (explanationContainer) {
+          explanationContainer.style.display = 'block';
+        }
+      });
+    });
+  });
+</script> 
