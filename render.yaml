@@ -24,6 +24,14 @@ services:
         value: 2
       - key: BUNDLE_FROZEN
         value: "false"
+      - key: BUNDLE_DISABLE_VERSION_CHECK
+        value: "true"
+      - key: RUBY_VERSION
+        value: "3.3.7"
+      - key: GEM_HOME
+        value: /opt/render/project/.gems
+      - key: PATH
+        value: /opt/render/project/.gems/bin:/opt/render/project/rubies/ruby-3.3.7/bin:$PATH
 
 databases:
   - name: flash-ai-db
