@@ -20,16 +20,20 @@ Rails.application.configure do
   if is_non_local_env || Rails.env.production?
     config.action_controller.forgery_protection_origin_check = false
     
-    # Allow hosts for various environments
-    allowed_hosts.each do |host|
-      config.hosts << host
-    end
-    
-    # Add wildcard hosts in production to allow any domain (can be restricted later)
-    if Rails.env.production?
-      # Allow your app to be served from any domain in production
-      # This should be replaced with your specific domains when known
-      config.hosts.clear
+    # For Render specifically, we set hosts = nil in production.rb,
+    # so we need to skip adding hosts
+    unless ENV['RENDER'] && Rails.env.production?
+      # Allow hosts for various environments
+      allowed_hosts.each do |host|
+        config.hosts << host if config.hosts
+      end
+      
+      # Add wildcard hosts in production to allow any domain (can be restricted later)
+      if Rails.env.production? && config.hosts
+        # Allow your app to be served from any domain in production
+        # This should be replaced with your specific domains when known
+        config.hosts.clear
+      end
     end
     
     # Make sure CSRF protection is still enabled
