@@ -42,26 +42,34 @@ touch public/assets/.keep
 echo "SKIPPING asset precompilation due to issues..."
 # We're skipping the standard asset precompilation since it's causing issues
 
+# Improved database setup with proper error handling
 echo "Setting up database..."
-# Wait for the database to be ready first
 echo "Waiting for PostgreSQL to be ready..."
 sleep 5
 
-# First, create the database if it doesn't exist
-echo "Creating database if it doesn't exist..."
-RAILS_ENV=production bundle exec rails db:create || true
+# Try to connect to the database and show its status
+echo "Checking database connection..."
+RAILS_ENV=production bundle exec rails db:version || echo "Database not initialized yet"
 
-# Run our manual setup rake task
-echo "Running manual database setup..."
-RAILS_ENV=production bundle exec rails db:manual_setup || true
+# Setup the database properly with retries
+MAX_RETRIES=3
+COUNT=0
+until RAILS_ENV=production bundle exec rails db:prepare || [ $COUNT -eq $MAX_RETRIES ]; do
+  echo "Database preparation attempt $((COUNT+1)) failed, retrying in 5 seconds..."
+  sleep 5
+  COUNT=$((COUNT+1))
+done
 
-# Run any pending migrations
+if [ $COUNT -eq $MAX_RETRIES ]; then
+  echo "Database preparation failed after $MAX_RETRIES attempts. Trying db:setup as fallback..."
+  RAILS_ENV=production bundle exec rails db:setup || echo "Warning: db:setup also failed."
+else
+  echo "Database preparation succeeded!"
+fi
+
+# Run migrations in any case
 echo "Running database migrations..."
-RAILS_ENV=production bundle exec rails db:migrate || true
-
-# Seed the database if needed
-echo "Seeding database..."
-RAILS_ENV=production bundle exec rails db:seed || true
+RAILS_ENV=production bundle exec rails db:migrate
 
 echo "Cleanup..."
 rm -rf tmp/cache

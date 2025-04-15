@@ -20,13 +20,16 @@ test:
   <<: *default
   database: storage/test.sqlite3
 
-# Configuration for Render deployment
-# For Render using PostgreSQL
+# Configuration for Render deployment using PostgreSQL
 production:
   adapter: postgresql
   encoding: unicode
+  # For details on connection pooling, see Rails configuration guide
+  # https://guides.rubyonrails.org/configuring.html#database-pooling
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
   url: <%= ENV['DATABASE_URL'] %>
-  database: flash_ai_production
-  
-  # Removed the multiple database configurations that were causing issues
+  # Recommended by Render for stability
+  prepared_statements: false
+  advisory_locks: false
+  # Ensure we check if the database exists and reconnect if needed
+  reconnect: true
