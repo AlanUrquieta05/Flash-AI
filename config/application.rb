@@ -6,11 +6,6 @@ require "rails/all"
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
-# Disable SolidCable for production to avoid database issues
-if defined?(SolidCable) && Rails.env.production?
-  SolidCable.eager_load = false
-end
-
 module FlashAi
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
