@@ -2,15 +2,25 @@
 # exit on error
 set -o errexit
 
-# Install dependencies
+echo "Starting Render build script"
+
+# Unfreeze bundler in a more robust way
+export BUNDLE_FROZEN=0
+bundle config --local frozen false
+bundle config --local deployment false
+bundle config --local without development:test
+
+echo "Installing dependencies..."
 bundle install
 
-# Compile assets
-bundle exec rails assets:precompile
-bundle exec rails assets:clean
+echo "Precompiling assets..."
+bundle exec rails assets:precompile RAILS_ENV=production
+bundle exec rails assets:clean RAILS_ENV=production
 
-# Setup database
-bundle exec rails db:migrate
+echo "Setting up database..."
+bundle exec rails db:migrate RAILS_ENV=production
 
-# Clear any lingering cache
+echo "Cleanup..."
 rm -rf tmp/cache
+
+echo "Build completed successfully!"

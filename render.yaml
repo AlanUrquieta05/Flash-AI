@@ -5,7 +5,7 @@ services:
   - type: web
     name: flash-ai
     runtime: ruby
-    buildCommand: "./bin/render-build.sh"
+    buildCommand: "chmod +x ./bin/render-build.sh && ./bin/render-build.sh"
     startCommand: "bundle exec puma -C config/puma.rb"
     envVars:
       - key: DATABASE_URL
@@ -22,6 +22,8 @@ services:
         value: true
       - key: WEB_CONCURRENCY
         value: 2
+      - key: BUNDLE_FROZEN
+        value: "false"
 
 databases:
   - name: flash-ai-db

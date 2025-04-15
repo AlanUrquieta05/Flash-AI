@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
 # Specify Ruby version for Render
-ruby "3.3.7"
+ruby "3.3.0"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 8.0.2"
@@ -22,7 +22,9 @@ gem "stimulus-rails"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem "jbuilder"
 
+# CSV support for data processing
 gem "csv"
+
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 gem "bcrypt", "~> 3.1.7"
 
@@ -45,9 +47,6 @@ gem "thruster", require: false
 
 # CORS support for API access
 gem "rack-cors"
-
-# CSV support for data processing
-gem "csv"
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # gem "image_processing", "~> 1.2"
