@@ -47,13 +47,21 @@ echo "Setting up database..."
 echo "Waiting for PostgreSQL to be ready..."
 sleep 5
 
-# First, try a basic migration to test the connection
-echo "Running database preparation..."
-RAILS_ENV=production bundle exec rails db:prepare
+# First, create the database if it doesn't exist
+echo "Creating database if it doesn't exist..."
+RAILS_ENV=production bundle exec rails db:create || true
 
-# Then run migrations
+# Load the schema directly (this will create all tables defined in schema.rb)
+echo "Loading database schema..."
+RAILS_ENV=production bundle exec rails db:schema:load
+
+# Run any pending migrations
 echo "Running database migrations..."
 RAILS_ENV=production bundle exec rails db:migrate
+
+# Seed the database if needed
+echo "Seeding database..."
+RAILS_ENV=production bundle exec rails db:seed || true
 
 echo "Cleanup..."
 rm -rf tmp/cache
