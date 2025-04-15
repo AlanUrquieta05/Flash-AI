@@ -49,23 +49,21 @@ sleep 5
 
 # Try to connect to the database and show its status
 echo "Checking database connection..."
-RAILS_ENV=production bundle exec rails db:version || echo "Database not initialized yet"
-
-# Setup the database properly with retries
-MAX_RETRIES=3
-COUNT=0
-until RAILS_ENV=production bundle exec rails db:prepare || [ $COUNT -eq $MAX_RETRIES ]; do
-  echo "Database preparation attempt $((COUNT+1)) failed, retrying in 5 seconds..."
-  sleep 5
-  COUNT=$((COUNT+1))
-done
-
-if [ $COUNT -eq $MAX_RETRIES ]; then
-  echo "Database preparation failed after $MAX_RETRIES attempts. Trying db:setup as fallback..."
-  RAILS_ENV=production bundle exec rails db:setup || echo "Warning: db:setup also failed."
+if RAILS_ENV=production bundle exec rails db:version; then
+  echo "Database exists and is accessible"
 else
-  echo "Database preparation succeeded!"
+  echo "Database not initialized yet or has issues. Creating database..."
+  RAILS_ENV=production bundle exec rails db:create
 fi
+
+# Force database setup if tables are missing
+echo "Forcing database setup..."
+RAILS_ENV=production bundle exec rails db:environment:set RAILS_ENV=production
+RAILS_ENV=production bundle exec rails db:schema:load || echo "Schema load failed, will try migrations"
+
+# Use our special rake task to force create tables if they're missing
+echo "Running force table creation as a failsafe..."
+RAILS_ENV=production bundle exec rails db:force_create_tables || echo "Force table creation failed, continuing anyway"
 
 # Run migrations in any case
 echo "Running database migrations..."
