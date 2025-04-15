@@ -22,8 +22,8 @@ jobs:
       - name: Fix script permissions
         run: bash .github/workflows/make_executable.sh
 
-      - name: Update Brakeman to latest version
-        run: gem install brakeman
+      - name: Install Brakeman 7.0.2
+        run: gem install brakeman -v 7.0.2
 
       - name: Scan for common Rails security vulnerabilities using static analysis
         run: bin/brakeman --no-pager
@@ -91,17 +91,33 @@ jobs:
       - name: Fix script permissions
         run: bash .github/workflows/make_executable.sh
 
+      - name: List test files
+        run: find test -type f -name "*_test.rb" | sort
+
+      - name: Debug Rails environment
+        run: |
+          echo "Rails version:"
+          bin/rails -v
+          echo "Ruby version:"
+          ruby -v
+          echo "Environment:"
+          bin/rails about
+
       - name: Prepare test database
         env:
           RAILS_ENV: test
+          DISABLE_SPRING: true
         run: bin/rails db:test:prepare
         timeout-minutes: 2
         
-      - name: Run unit tests
+      - name: Run unit tests with verbose output
         env:
           RAILS_ENV: test
-        run: bin/rails test
-        timeout-minutes: 5
+          DISABLE_SPRING: true
+          TESTOPTS: "--verbose"
+          RAILS_LOG_TO_STDOUT: true
+        run: bin/rails test --verbose
+        timeout-minutes: 8
         
       - name: Run system tests
         env:
