@@ -26,4 +26,4 @@ services:
 databases:
   - name: flash-ai-db
     databaseName: flash_ai_production
-    ipAllowList: [] 
+    ipAllowList: []

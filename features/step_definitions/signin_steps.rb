@@ -40,4 +40,4 @@ end
 
 Then('I should be on the homepage') do
   expect(page).to have_current_path('/home')
-end 
+end

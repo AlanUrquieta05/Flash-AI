@@ -13,4 +13,4 @@ bundle exec rails assets:clean
 bundle exec rails db:migrate
 
 # Clear any lingering cache
-rm -rf tmp/cache 
+rm -rf tmp/cache
