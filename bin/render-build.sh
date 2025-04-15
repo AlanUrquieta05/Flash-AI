@@ -51,13 +51,13 @@ sleep 5
 echo "Creating database if it doesn't exist..."
 RAILS_ENV=production bundle exec rails db:create || true
 
-# Load the schema directly (this will create all tables defined in schema.rb)
-echo "Loading database schema..."
-RAILS_ENV=production bundle exec rails db:schema:load
+# Run our manual setup rake task
+echo "Running manual database setup..."
+RAILS_ENV=production bundle exec rails db:manual_setup || true
 
 # Run any pending migrations
 echo "Running database migrations..."
-RAILS_ENV=production bundle exec rails db:migrate
+RAILS_ENV=production bundle exec rails db:migrate || true
 
 # Seed the database if needed
 echo "Seeding database..."

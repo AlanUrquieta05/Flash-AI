@@ -1,0 +1,14 @@
+<div class="login-container">
+    <div class="login-card">
+        <h1 class="logo">Flash-AI</h1>
+        <h2>Service Temporarily Unavailable</h2>
+        
+        <div class="alert-message">
+            <p><%= @error_message || "We're experiencing some technical difficulties. Please try again later." %></p>
+        </div>
+        
+        <p class="signup-text">
+            Return to <%= link_to "Login Page", new_session_path %>
+        </p>
+    </div>
+</div> 
