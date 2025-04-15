@@ -23,28 +23,31 @@ test:
 # Configuration for Render deployment
 # For Render using PostgreSQL
 production:
-  adapter: postgresql
-  encoding: unicode
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  url: <%= ENV['DATABASE_URL'] %>
+  primary:
+    adapter: postgresql
+    encoding: unicode
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+    url: <%= ENV['DATABASE_URL'] %>
   
-  # If not using the DATABASE_URL env var, uncomment and configure these:
-  # database: flash_ai_production
-  # username: flash_ai
-  # password: <%= ENV['FLASH_AI_DATABASE_PASSWORD'] %>
-  # host: localhost
-  # port: 5432
-
-  # For cache, queue, and cable databases
+  # Shared database config for cable, queue and cache
+  # These will use the same database connection as primary
   cache:
-    <<: *default
-    database: storage/production_cache.sqlite3
+    adapter: postgresql
+    encoding: unicode
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+    url: <%= ENV['DATABASE_URL'] %>
     migrations_paths: db/cache_migrate
+    
   queue:
-    <<: *default
-    database: storage/production_queue.sqlite3
+    adapter: postgresql
+    encoding: unicode
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+    url: <%= ENV['DATABASE_URL'] %>
     migrations_paths: db/queue_migrate
+    
   cable:
-    <<: *default
-    database: storage/production_cable.sqlite3
+    adapter: postgresql
+    encoding: unicode
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+    url: <%= ENV['DATABASE_URL'] %>
     migrations_paths: db/cable_migrate
