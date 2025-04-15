@@ -3,6 +3,9 @@ Rails.application.routes.draw do
   resource :session
   resources :passwords, param: :token
   resources :users, only: [:new, :create]
+  
+  # Login route
+  get 'login' => 'sessions#new', as: :login
 
   # Flash card routes
   resources :flash_card_sets do
