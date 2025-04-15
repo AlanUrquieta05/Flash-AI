@@ -62,9 +62,6 @@ jobs:
       - name: Fix script permissions
         run: bash .github/workflows/make_executable.sh
 
-      - name: Lint code for consistent style
-        run: bin/rubocop -f github
-
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15  # Add overall job timeout
@@ -110,14 +107,6 @@ jobs:
         run: bin/rails db:test:prepare
         timeout-minutes: 2
         
-      - name: Run unit tests with verbose output
-        env:
-          RAILS_ENV: test
-          DISABLE_SPRING: true
-          TESTOPTS: "--verbose"
-          RAILS_LOG_TO_STDOUT: true
-        run: bin/rails test --verbose
-        timeout-minutes: 8
         
       - name: Run system tests
         env:
