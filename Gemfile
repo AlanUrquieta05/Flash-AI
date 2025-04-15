@@ -1,11 +1,16 @@
 source "https://rubygems.org"
 
+# Specify Ruby version for Render
+ruby "3.3.0"
+
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 8.0.2"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
 gem "propshaft"
-# Use sqlite3 as the database for Active Record
-gem "sqlite3", ">= 2.1"
+# Use sqlite3 as the database for Active Record (development and test)
+gem "sqlite3", ">= 2.1", group: [:development, :test]
+# Use PostgreSQL as the database for production
+gem "pg", group: :production
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
@@ -36,6 +41,12 @@ gem "kamal", require: false
 
 # Add HTTP asset caching/compression and X-Sendfile acceleration to Puma [https://github.com/basecamp/thruster/]
 gem "thruster", require: false
+
+# CORS support for API access
+gem "rack-cors"
+
+# CSV support for data processing
+gem "csv"
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # gem "image_processing", "~> 1.2"

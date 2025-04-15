@@ -49,6 +49,7 @@ When('I click study on the set') do
     puts "Warning: Could not click the study button (#{e.message}), visiting directly instead."
     visit flash_card_set_path(@flash_card_set)
   end
+  
 end
 
 Then('I should be on the study set page') do

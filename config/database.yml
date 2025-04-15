@@ -18,16 +18,24 @@ development:
 # Do not set this db to the same as development or production.
 test:
   <<: *default
-  
   database: storage/test.sqlite3
 
-
-# Store production database in the storage/ directory, which by default
-# is mounted as a persistent Docker volume in config/deploy.yml.
+# Configuration for Render deployment
+# For Render using PostgreSQL
 production:
-  primary:
-    <<: *default
-    database: storage/production.sqlite3
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  url: <%= ENV['DATABASE_URL'] %>
+  
+  # If not using the DATABASE_URL env var, uncomment and configure these:
+  # database: flash_ai_production
+  # username: flash_ai
+  # password: <%= ENV['FLASH_AI_DATABASE_PASSWORD'] %>
+  # host: localhost
+  # port: 5432
+
+  # For cache, queue, and cable databases
   cache:
     <<: *default
     database: storage/production_cache.sqlite3

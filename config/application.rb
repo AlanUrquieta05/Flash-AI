@@ -23,5 +23,14 @@ module FlashAi
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
+    
+    # Use Rack::Deflater for gzip compression
+    config.middleware.use Rack::Deflater
+    
+    # Set default locale to English
+    config.i18n.default_locale = :en
+    
+    # For Render deployment - handle cookies and sessions properly
+    config.action_dispatch.cookies_same_site_protection = :lax
   end
 end
