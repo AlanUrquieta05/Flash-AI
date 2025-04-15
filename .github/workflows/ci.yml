@@ -22,6 +22,9 @@ jobs:
       - name: Fix script permissions
         run: bash .github/workflows/make_executable.sh
 
+      - name: Update Brakeman to latest version
+        run: gem install brakeman
+
       - name: Scan for common Rails security vulnerabilities using static analysis
         run: bin/brakeman --no-pager
 
@@ -64,6 +67,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15  # Add overall job timeout
 
     # services:
     #  redis:
@@ -87,11 +91,25 @@ jobs:
       - name: Fix script permissions
         run: bash .github/workflows/make_executable.sh
 
-      - name: Run tests
+      - name: Prepare test database
         env:
           RAILS_ENV: test
-          # REDIS_URL: redis://localhost:6379/0
-        run: bin/rails db:test:prepare test test:system
+        run: bin/rails db:test:prepare
+        timeout-minutes: 2
+        
+      - name: Run unit tests
+        env:
+          RAILS_ENV: test
+        run: bin/rails test
+        timeout-minutes: 5
+        
+      - name: Run system tests
+        env:
+          RAILS_ENV: test
+          HEADLESS: true
+          DISABLE_SPRING: true
+        run: bin/rails test:system
+        timeout-minutes: 7
 
       - name: Keep screenshots from failed system tests
         uses: actions/upload-artifact@v4
