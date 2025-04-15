@@ -1,5 +1,5 @@
 Given('I am on the login page') do
-  visit '/login'
+  visit 'https://silver-spork-4jjq5v7j6wxxhp4q-3000.app.github.dev/'
 end
 
 Given('I click Sign Up') do
@@ -34,10 +34,11 @@ When('I fill in a known email') do
 end
 
 When('I fill in the known password') do
-  fill_in 'password', with: 'password123'
+  fill_in 'password', with: @user.password
   click_button 'Sign in'
 end
 
 Then('I should be on the homepage') do
+  expect(page).to have_content("Create Your Flashcards")
   expect(page).to have_current_path('/home')
 end 

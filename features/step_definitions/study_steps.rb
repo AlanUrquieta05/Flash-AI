@@ -7,7 +7,7 @@ Given('I am logged in') do
   )
   
   # Visit login page and sign in
-  visit '/login'
+  visit 'https://silver-spork-4jjq5v7j6wxxhp4q-3000.app.github.dev/'
   fill_in 'email_address', with: @user.email_address
   fill_in 'password', with: 'password123'
   click_button 'Sign in'
@@ -17,7 +17,7 @@ Given('I am logged in') do
 end
 
 When('I am on the homepage') do
-  visit '/home'
+  visit 'https://silver-spork-4jjq5v7j6wxxhp4q-3000.app.github.dev/home'
 end
 
 Given('I have a flashcard set created') do
@@ -30,7 +30,7 @@ Given('I have a flashcard set created') do
   )
   
   # Reload the page to see the new set
-  visit '/home'
+  visit 'https://silver-spork-4jjq5v7j6wxxhp4q-3000.app.github.dev/home'
   
   # Verify the set appears on the page
   expect(page).to have_content('Test Flashcard Set')

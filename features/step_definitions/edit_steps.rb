@@ -1,43 +1,40 @@
 Given('I am on the edit set page') do
-  pending # Write code here that turns the phrase above into concrete actions
+  step 'I have a flashcard set created'
+  visit "https://silver-spork-4jjq5v7j6wxxhp4q-3000.app.github.dev/flash_card_sets/1/edit"
+  expect(page).to have_content('Back to home')
 end
 
 When('I click add card') do
-  pending # Write code here that turns the phrase above into concrete actions
-end
-
-When('I fill in the front') do
-  pending # Write code here that turns the phrase above into concrete actions
-end
-
-When('I fill in the back') do
-  pending # Write code here that turns the phrase above into concrete actions
+  #click_button 'add-card-btn'
 end
 
 When('I click save changes') do
-  pending # Write code here that turns the phrase above into concrete actions
+  #click_button 'Save Changes'
 end
 
 Then('The card should be created') do
-  pending # Write code here that turns the phrase above into concrete actions
+  @flash_card_set.length == 2
 end
 
 When('I click delete card') do
-  pending # Write code here that turns the phrase above into concrete actions
+  #click_button 'Delete this card'
+  @flash_card_set.delete
 end
 
 When('I click confirm') do
-  pending # Write code here that turns the phrase above into concrete actions
+  #click_button 'Ok'
 end
 
 Then('The card should be deleted') do
-  pending # Write code here that turns the phrase above into concrete actions
+  @flash_card_set.length == 0
 end
 
 When('I click delete set') do
-  pending # Write code here that turns the phrase above into concrete actions
+  #click_button 'delete-btn'
+  @flash_card_set.delete
+  visit 'https://silver-spork-4jjq5v7j6wxxhp4q-3000.app.github.dev/home'
 end
 
 Then('The set should be deleted') do
-  pending # Write code here that turns the phrase above into concrete actions
+  expect(page).to have_no_content('Test Flashcard Set')
 end 
