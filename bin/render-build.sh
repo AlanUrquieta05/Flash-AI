@@ -43,6 +43,16 @@ echo "SKIPPING asset precompilation due to issues..."
 # We're skipping the standard asset precompilation since it's causing issues
 
 echo "Setting up database..."
+# Wait for the database to be ready first
+echo "Waiting for PostgreSQL to be ready..."
+sleep 5
+
+# First, try a basic migration to test the connection
+echo "Running database preparation..."
+RAILS_ENV=production bundle exec rails db:prepare
+
+# Then run migrations
+echo "Running database migrations..."
 RAILS_ENV=production bundle exec rails db:migrate
 
 echo "Cleanup..."
