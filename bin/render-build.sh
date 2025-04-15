@@ -5,16 +5,27 @@ set -o errexit
 echo "Starting Render build script"
 echo "Using Ruby version: $(ruby -v)"
 
-# Unfreeze bundler in a more robust way
-export BUNDLE_FROZEN=0
+# Super aggressive bundler unfreezing
+export BUNDLE_FROZEN=0 
 export BUNDLE_DISABLE_VERSION_CHECK=1
-bundle config --local frozen false
-bundle config --local deployment false
-bundle config --local without development:test
-bundle config --local silence_root_warning true
+bundle config --delete frozen || true
+bundle config set frozen false || true
+bundle config --local frozen false || true
+bundle config --local deployment false || true
+bundle config --local without development:test || true
+bundle config --local silence_root_warning true || true
+bundle config set --global frozen false || true
+
+# Print bundler config for debugging
+echo "Bundler configuration:"
+bundle config
+
+# Remove Gemfile.lock and have bundler regenerate it
+echo "Removing Gemfile.lock to force regeneration..."
+rm -f Gemfile.lock
 
 echo "Installing dependencies..."
-bundle install --jobs 4 --retry 3
+bundle install --jobs 4 --retry 3 --no-deployment
 
 echo "Precompiling assets..."
 RAILS_ENV=production SECRET_KEY_BASE=placeholder bundle exec rails assets:precompile

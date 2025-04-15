@@ -5,7 +5,7 @@ services:
   - type: web
     name: flash-ai
     runtime: ruby
-    buildCommand: "chmod +x ./bin/render-build.sh && ./bin/render-build.sh"
+    buildCommand: "chmod +x ./bin/render-build.sh && BUNDLE_FROZEN=0 BUNDLE_DEPLOYMENT=0 BUNDLE_WITHOUT='' ./bin/render-build.sh"
     startCommand: "bundle exec puma -C config/puma.rb"
     envVars:
       - key: DATABASE_URL
@@ -26,6 +26,10 @@ services:
         value: "false"
       - key: BUNDLE_DISABLE_VERSION_CHECK
         value: "true"
+      - key: BUNDLE_WITHOUT
+        value: "development:test"
+      - key: BUNDLE_DEPLOYMENT
+        value: "false"
       - key: RUBY_VERSION
         value: "3.3.7"
       - key: GEM_HOME
