@@ -5,7 +5,7 @@ services:
   - type: web
     name: flash-ai
     runtime: ruby
-    buildCommand: "chmod +x ./bin/render-build.sh && BUNDLE_FROZEN=0 BUNDLE_DEPLOYMENT=0 BUNDLE_WITHOUT='' ./bin/render-build.sh"
+    buildCommand: "chmod +x ./bin/render-build.sh && BUNDLE_FROZEN=0 BUNDLE_DEPLOYMENT=0 BUNDLE_WITHOUT='' SKIP_TAILWIND=true ./bin/render-build.sh"
     startCommand: "bundle exec puma -C config/puma.rb"
     envVars:
       - key: DATABASE_URL
@@ -36,6 +36,8 @@ services:
         value: /opt/render/project/.gems
       - key: PATH
         value: /opt/render/project/.gems/bin:/opt/render/project/rubies/ruby-3.3.7/bin:$PATH
+      - key: SKIP_TAILWIND
+        value: "true"
 
 databases:
   - name: flash-ai-db
