@@ -84,4 +84,5 @@ group :test do
   gem "selenium-webdriver"
 end
 
-gem "tailwindcss-rails", "~> 3.3.1"
+# Tailwind CSS is removed since it's causing deployment issues
+# gem "tailwindcss-rails", "~> 3.3.1"

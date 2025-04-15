@@ -36,8 +36,6 @@ services:
         value: /opt/render/project/.gems
       - key: PATH
         value: /opt/render/project/.gems/bin:/opt/render/project/rubies/ruby-3.3.7/bin:$PATH
-      - key: SKIP_TAILWIND
-        value: "true"
 
 databases:
   - name: flash-ai-db
