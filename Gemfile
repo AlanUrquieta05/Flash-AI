@@ -53,6 +53,13 @@ group :development, :test do
   # Load environment variables from .env file
   gem "dotenv-rails"
   gem 'ruby-openai'
+  
+  # Cucumber for BDD testing
+  gem "cucumber-rails", require: false
+  gem "database_cleaner"
+  
+  # RSpec for testing
+  gem "rspec-rails"
 end
 
 group :development do
@@ -64,7 +71,6 @@ group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
   gem "selenium-webdriver"
-  gem "cucumber-rails", require: false
 end
 
 gem "tailwindcss-rails", "~> 4.2"
